@@ -2,6 +2,7 @@ import {
   GameController,
   createInitialState,
   makeAIDecision,
+  hasPlayerChosen,
   type GameState,
   type GameEvent,
   type Player,
@@ -83,7 +84,13 @@ export function startGame(room: RoomState): { state: GameState; events: GameEven
   if (result.error) return { error: result.error };
 
   room.gameState = result.state;
-  return { state: result.state, events: result.events };
+  const allEvents = [...result.events];
+
+  // Auto-execute AI turns (e.g. if AI drafts first)
+  const aiResults = executeAITurns(room);
+  allEvents.push(...aiResults.events);
+
+  return { state: room.gameState, events: allEvents };
 }
 
 /**
@@ -154,10 +161,9 @@ function getNextAIAction(
     }
 
     case 'RACE_SETUP': {
-      // Check if any AI hasn't chosen yet
+      // Simultaneous selection: AI players that haven't chosen yet
       for (const ai of room.aiPlayers) {
-        const hasChosen = state.activeRacers.some(r => r.playerId === ai.id);
-        if (hasChosen) continue;
+        if (hasPlayerChosen(state, ai.id)) continue;
         const player = state.players.find(p => p.id === ai.id);
         if (!player) continue;
         const available = player.hand.filter(r => !player.usedRacers.includes(r));
@@ -185,7 +191,7 @@ function getNextAIAction(
 }
 
 /**
- * Get the player view of the state (hide other players' hands).
+ * Get the player view of the state (hide other players' hands and choices).
  */
 export function getPlayerView(state: GameState, playerId: string): any {
   return {
@@ -194,6 +200,12 @@ export function getPlayerView(state: GameState, playerId: string): any {
       ...p,
       hand: p.id === playerId ? p.hand : p.hand.map(() => 'hidden' as any),
     })),
+    // Hide other players' race setup choices (only show that they've chosen)
+    raceSetupChoices: Object.fromEntries(
+      Object.entries(state.raceSetupChoices).map(([pid, racer]) =>
+        [pid, pid === playerId ? racer : 'chosen']
+      )
+    ),
     // Convert Set to array for serialization
     triggeredThisMove: [...state.triggeredThisMove],
   };

@@ -1,16 +1,25 @@
 import type { GameState, GameEvent, RacerName } from '../types.js';
-import { generateDraftOrder, getDraftsPerPlayer } from '../state.js';
+import { ALL_RACER_NAMES } from '../racers.js';
+import { generateFullDraftOrder, getFlipCount, flipDraftCards } from '../state.js';
 
+/**
+ * Start draft: flip first round of cards, set up snake draft order.
+ */
 export function startDraft(state: GameState): { state: GameState; events: GameEvent[] } {
   const playerIds = state.players.map(p => p.id);
-  const draftsPerPlayer = getDraftsPerPlayer(state.players.length);
-  const draftOrder = generateDraftOrder(playerIds, draftsPerPlayer);
+  const playerCount = playerIds.length;
+  const draftOrder = generateFullDraftOrder(playerIds, playerCount);
+
+  // Flip first round of cards
+  const flipCount = getFlipCount(playerCount);
+  const flipped = flipDraftCards(ALL_RACER_NAMES, [], flipCount);
 
   const newState: GameState = {
     ...state,
     phase: 'DRAFTING',
     draftOrder,
     draftCurrentIndex: 0,
+    availableRacers: flipped,
   };
 
   return {
@@ -19,6 +28,10 @@ export function startDraft(state: GameState): { state: GameState; events: GameEv
   };
 }
 
+/**
+ * Process a draft pick. When a round's available racers are exhausted,
+ * flip the next round's cards.
+ */
 export function processDraftPick(
   state: GameState,
   playerId: string,
@@ -45,9 +58,18 @@ export function processDraftPick(
     return p;
   });
 
-  const availableRacers = state.availableRacers.filter(r => r !== racerName);
+  let availableRacers = state.availableRacers.filter(r => r !== racerName);
   const nextIndex = state.draftCurrentIndex + 1;
   const draftComplete = nextIndex >= state.draftOrder.length;
+
+  // Check if current round is finished (all flipped cards taken)
+  // and we need to flip new cards for the next round
+  if (!draftComplete && availableRacers.length === 0) {
+    // Collect all already-drafted racer names
+    const allDrafted = players.flatMap(p => p.hand);
+    const flipCount = getFlipCount(players.length);
+    availableRacers = flipDraftCards(ALL_RACER_NAMES, allDrafted, flipCount);
+  }
 
   const newState: GameState = {
     ...state,

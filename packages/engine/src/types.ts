@@ -160,6 +160,9 @@ export interface GameState {
 
   // 回合开始时的位置（用于 Heckler 判定）
   turnStartPositions: Record<string, number>;
+
+  // 比赛选人（同时选、同时揭示）
+  raceSetupChoices: Record<string, RacerName>;
 }
 
 // ============ 玩家动作 ============

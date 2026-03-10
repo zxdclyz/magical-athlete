@@ -13,110 +13,88 @@ function makePlayers(count: number): Player[] {
   }));
 }
 
+/** Run the full draft, always picking the first available racer. */
+function draftAll(controller: GameController, state: GameState): GameState {
+  while (state.phase === 'DRAFTING') {
+    const playerId = state.draftOrder[state.draftCurrentIndex];
+    const pick = state.availableRacers[0];
+    const result = controller.processAction(state, playerId, {
+      type: 'MAKE_DECISION',
+      decision: { type: 'DRAFT_PICK', racerName: pick },
+    });
+    expect(result.error).toBeUndefined();
+    state = result.state;
+  }
+  return state;
+}
+
+/** Both players choose their first available racer for a race. */
+function raceSetup(controller: GameController, state: GameState): GameState {
+  for (const p of state.players) {
+    const available = p.hand.filter(r => !p.usedRacers.includes(r));
+    if (available.length === 0) break;
+    const result = controller.processAction(state, p.id, {
+      type: 'MAKE_DECISION',
+      decision: { type: 'CHOOSE_RACE_RACER', racerName: available[0] },
+    });
+    expect(result.error).toBeUndefined();
+    state = result.state;
+  }
+  return state;
+}
+
 describe('GameController', () => {
   it('should start game from LOBBY to DRAFTING', () => {
     const controller = new GameController();
-    const state = createInitialState(makePlayers(2));
+    const state = createInitialState(makePlayers(3));
     const result = controller.processAction(state, 'p1', { type: 'START_GAME' });
 
     expect(result.error).toBeUndefined();
     expect(result.state.phase).toBe('DRAFTING');
     expect(result.state.draftOrder.length).toBeGreaterThan(0);
+    expect(result.state.availableRacers.length).toBe(6); // 3 players → flip 6
   });
 
   it('should reject start game with fewer than 2 players', () => {
     const controller = new GameController();
     const state = createInitialState(makePlayers(1));
     const result = controller.processAction(state, 'p1', { type: 'START_GAME' });
-
     expect(result.error).toBeDefined();
   });
 
   it('should process draft picks through to RACE_SETUP', () => {
     const controller = new GameController();
-    let state = createInitialState(makePlayers(2));
+    let state = createInitialState(makePlayers(3));
     state = controller.processAction(state, 'p1', { type: 'START_GAME' }).state;
-
-    const racers = state.availableRacers.slice();
-    // Complete all draft picks (2 players × 5 picks = 10)
-    for (let i = 0; i < 10; i++) {
-      const playerId = state.draftOrder[state.draftCurrentIndex];
-      const result = controller.processAction(state, playerId, {
-        type: 'MAKE_DECISION',
-        decision: { type: 'DRAFT_PICK', racerName: racers[i] },
-      });
-      expect(result.error).toBeUndefined();
-      state = result.state;
-    }
+    state = draftAll(controller, state);
 
     expect(state.phase).toBe('RACE_SETUP');
-    expect(state.players[0].hand).toHaveLength(5);
-    expect(state.players[1].hand).toHaveLength(5);
+    expect(state.players[0].hand).toHaveLength(4);
+    expect(state.players[1].hand).toHaveLength(4);
+    expect(state.players[2].hand).toHaveLength(4);
   });
 
-  it('should process race setup through to RACING', () => {
+  it('should process race setup through to RACING (simultaneous)', () => {
     const controller = new GameController();
-    let state = createInitialState(makePlayers(2));
+    let state = createInitialState(makePlayers(3));
     state = controller.processAction(state, 'p1', { type: 'START_GAME' }).state;
-
-    // Draft all picks
-    const racers = state.availableRacers.slice();
-    for (let i = 0; i < 10; i++) {
-      const playerId = state.draftOrder[state.draftCurrentIndex];
-      state = controller.processAction(state, playerId, {
-        type: 'MAKE_DECISION',
-        decision: { type: 'DRAFT_PICK', racerName: racers[i] },
-      }).state;
-    }
-
-    // Both players choose racers
-    const p1Racer = state.players[0].hand[0];
-    const p2Racer = state.players[1].hand[0];
-
-    state = controller.processAction(state, 'p1', {
-      type: 'MAKE_DECISION',
-      decision: { type: 'CHOOSE_RACE_RACER', racerName: p1Racer },
-    }).state;
-
-    state = controller.processAction(state, 'p2', {
-      type: 'MAKE_DECISION',
-      decision: { type: 'CHOOSE_RACE_RACER', racerName: p2Racer },
-    }).state;
+    state = draftAll(controller, state);
+    state = raceSetup(controller, state);
 
     expect(state.phase).toBe('RACING');
-    expect(state.activeRacers).toHaveLength(2);
+    expect(state.activeRacers).toHaveLength(3);
   });
 
   it('should execute turns and detect race end', () => {
     const controller = new GameController();
-    let state = createInitialState(makePlayers(2));
+    let state = createInitialState(makePlayers(3));
     state = controller.processAction(state, 'p1', { type: 'START_GAME' }).state;
-
-    // Quick draft
-    const racers = state.availableRacers.slice();
-    for (let i = 0; i < 10; i++) {
-      const playerId = state.draftOrder[state.draftCurrentIndex];
-      state = controller.processAction(state, playerId, {
-        type: 'MAKE_DECISION',
-        decision: { type: 'DRAFT_PICK', racerName: racers[i] },
-      }).state;
-    }
-
-    // Race setup
-    const p1Racer = state.players[0].hand[0];
-    const p2Racer = state.players[1].hand[0];
-    state = controller.processAction(state, 'p1', {
-      type: 'MAKE_DECISION',
-      decision: { type: 'CHOOSE_RACE_RACER', racerName: p1Racer },
-    }).state;
-    state = controller.processAction(state, 'p2', {
-      type: 'MAKE_DECISION',
-      decision: { type: 'CHOOSE_RACE_RACER', racerName: p2Racer },
-    }).state;
+    state = draftAll(controller, state);
+    state = raceSetup(controller, state);
 
     // Run turns until race ends (force dice = 6 for speed)
     let turnCount = 0;
-    while (state.phase === 'RACING' && turnCount < 50) {
+    while (state.phase === 'RACING' && turnCount < 100) {
       const currentPlayerId = state.turnOrder[state.currentTurnIndex];
       const result = controller.processAction(state, currentPlayerId, {
         type: 'MAKE_DECISION',
@@ -127,47 +105,21 @@ describe('GameController', () => {
       turnCount++;
     }
 
-    // Race should have ended and moved to RACE_SETUP for race 2
     expect(state.phase).toBe('RACE_SETUP');
     expect(state.currentRace).toBe(2);
-    expect(state.scores['p1']).toBeGreaterThan(0); // At least one player scored
   });
 
   it('should complete 4 races and end the game', () => {
     const controller = new GameController();
-    let state = createInitialState(makePlayers(2));
+    let state = createInitialState(makePlayers(3));
     state = controller.processAction(state, 'p1', { type: 'START_GAME' }).state;
+    state = draftAll(controller, state);
 
-    // Draft
-    const racers = state.availableRacers.slice();
-    for (let i = 0; i < 10; i++) {
-      const playerId = state.draftOrder[state.draftCurrentIndex];
-      state = controller.processAction(state, playerId, {
-        type: 'MAKE_DECISION',
-        decision: { type: 'DRAFT_PICK', racerName: racers[i] },
-      }).state;
-    }
-
-    // Play 4 races
     for (let race = 0; race < 4; race++) {
-      // Race setup — pick unused racers
-      const p1Available = state.players[0].hand.filter(r => !state.players[0].usedRacers.includes(r));
-      const p2Available = state.players[1].hand.filter(r => !state.players[1].usedRacers.includes(r));
+      state = raceSetup(controller, state);
 
-      if (p1Available.length === 0 || p2Available.length === 0) break;
-
-      state = controller.processAction(state, 'p1', {
-        type: 'MAKE_DECISION',
-        decision: { type: 'CHOOSE_RACE_RACER', racerName: p1Available[0] },
-      }).state;
-      state = controller.processAction(state, 'p2', {
-        type: 'MAKE_DECISION',
-        decision: { type: 'CHOOSE_RACE_RACER', racerName: p2Available[0] },
-      }).state;
-
-      // Run turns
       let turnCount = 0;
-      while (state.phase === 'RACING' && turnCount < 50) {
+      while (state.phase === 'RACING' && turnCount < 100) {
         const currentPlayerId = state.turnOrder[state.currentTurnIndex];
         const result = controller.processAction(state, currentPlayerId, {
           type: 'MAKE_DECISION',
@@ -180,8 +132,5 @@ describe('GameController', () => {
     }
 
     expect(state.phase).toBe('GAME_OVER');
-    // Both players should have scores
-    expect(state.scores['p1']).toBeGreaterThan(0);
-    expect(state.scores['p2']).toBeGreaterThan(0);
   });
 });

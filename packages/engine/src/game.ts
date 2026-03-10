@@ -176,6 +176,7 @@ export class GameController {
         extraTurnPlayerId: null,
         skipperNextPlayerId: null,
         turnStartPositions: {},
+        raceSetupChoices: {},
       };
       events.push({ type: 'PHASE_CHANGED', phase: 'RACE_SETUP' });
     }

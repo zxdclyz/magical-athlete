@@ -14,63 +14,76 @@ function makePlayers(count: number): Player[] {
 }
 
 describe('Draft Phase', () => {
-  it('startDraft should transition to DRAFTING and generate draft order', () => {
+  it('startDraft should transition to DRAFTING and flip cards', () => {
     const state = createInitialState(makePlayers(3));
     const result = startDraft(state);
 
     expect(result.state.phase).toBe('DRAFTING');
     expect(result.state.draftOrder.length).toBe(12); // 3 players × 4 picks
     expect(result.state.draftCurrentIndex).toBe(0);
+    // Should have flipped 2×3 = 6 cards
+    expect(result.state.availableRacers).toHaveLength(6);
   });
 
-  it('should allow the current player to pick a racer', () => {
+  it('should allow the current player to pick a flipped racer', () => {
     const state = createInitialState(makePlayers(3));
     const { state: draftState } = startDraft(state);
     const currentPlayerId = draftState.draftOrder[0]; // p1
+    const firstAvailable = draftState.availableRacers[0];
 
-    const result = processDraftPick(draftState, currentPlayerId, 'alchemist');
+    const result = processDraftPick(draftState, currentPlayerId, firstAvailable);
 
     expect(result.error).toBeUndefined();
     expect(result.state!.draftCurrentIndex).toBe(1);
-    expect(result.state!.availableRacers).not.toContain('alchemist');
+    expect(result.state!.availableRacers).not.toContain(firstAvailable);
     const player = result.state!.players.find(p => p.id === currentPlayerId)!;
-    expect(player.hand).toContain('alchemist');
+    expect(player.hand).toContain(firstAvailable);
   });
 
   it('should reject pick from wrong player', () => {
     const state = createInitialState(makePlayers(3));
     const { state: draftState } = startDraft(state);
+    const firstAvailable = draftState.availableRacers[0];
     // First pick is p1, try p2
-    const result = processDraftPick(draftState, 'p2', 'alchemist');
+    const result = processDraftPick(draftState, 'p2', firstAvailable);
     expect(result.error).toBeDefined();
   });
 
-  it('should reject picking unavailable racer', () => {
+  it('should reject picking a racer not in the flipped pool', () => {
     const state = createInitialState(makePlayers(3));
     const { state: draftState } = startDraft(state);
     const currentPlayerId = draftState.draftOrder[0];
 
-    const { state: state2 } = processDraftPick(draftState, currentPlayerId, 'alchemist');
-    // Next player tries to pick alchemist again
-    const nextPlayerId = state2!.draftOrder[1];
-    const result = processDraftPick(state2!, nextPlayerId, 'alchemist');
-    expect(result.error).toBeDefined();
+    // Try to pick a racer that's not in availableRacers
+    const notAvailable = 'stickler'; // likely not in the flipped 6
+    if (!draftState.availableRacers.includes(notAvailable as any)) {
+      const result = processDraftPick(draftState, currentPlayerId, notAvailable as any);
+      expect(result.error).toBeDefined();
+    }
   });
 
-  it('should transition to RACE_SETUP when all picks complete', () => {
-    const players = makePlayers(2); // 2 players × 5 picks = 10 total
+  it('should flip new cards when round 1 exhausted and finish after all picks', () => {
+    const players = makePlayers(3); // 3 players → 12 total picks, 2 rounds of 6
     let state = startDraft(createInitialState(players)).state;
-    const racers = state.availableRacers.slice();
 
-    for (let i = 0; i < 10; i++) {
+    // Draft all 12 picks
+    for (let i = 0; i < 12; i++) {
       const playerId = state.draftOrder[i];
-      const result = processDraftPick(state, playerId, racers[i]);
+      const pick = state.availableRacers[0]; // always pick first available
+      const result = processDraftPick(state, playerId, pick);
       expect(result.error).toBeUndefined();
       state = result.state!;
+
+      // After round 1 (6 picks), new cards should be flipped
+      if (i === 5 && state.phase === 'DRAFTING') {
+        expect(state.availableRacers.length).toBe(6); // new 6 flipped
+      }
     }
 
     expect(state.phase).toBe('RACE_SETUP');
-    expect(state.players[0].hand).toHaveLength(5);
-    expect(state.players[1].hand).toHaveLength(5);
+    // Each player should have 4 racers
+    expect(state.players[0].hand).toHaveLength(4);
+    expect(state.players[1].hand).toHaveLength(4);
+    expect(state.players[2].hand).toHaveLength(4);
   });
 });

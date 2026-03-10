@@ -5,6 +5,7 @@ import { EventLog } from '../components/EventLog.tsx';
 import { ScoreBoard } from '../components/ScoreBoard.tsx';
 import { DecisionPanel } from '../components/DecisionPanel.tsx';
 import { DiceRoll } from '../components/DiceRoll.tsx';
+import { RacerCard } from '../components/RacerCard.tsx';
 import { getRacerImageUrl } from '../assets/racerImages.ts';
 
 interface RaceProps {
@@ -51,16 +52,49 @@ export function Race({ gameState, playerId, events, onAction }: RaceProps) {
     );
   }
 
-  // Race setup phase — choosing racers
+  // Race setup phase — simultaneous racer selection
   if (gameState.phase === 'RACE_SETUP') {
+    const me = gameState.players.find(p => p.id === playerId);
+    const myAvailable = me ? me.hand.filter(r => !me.usedRacers.includes(r)) : [];
+    const myChoice = (gameState as any).raceSetupChoices?.[playerId];
+    const hasChosen = !!myChoice;
+
+    // Count who has chosen
+    const chosenCount = Object.keys((gameState as any).raceSetupChoices ?? {}).length;
+    const totalPlayers = gameState.players.length;
+
     return (
       <div className="page">
         <h1>Race {gameState.currentRace} of 4 — Choose Your Racer</h1>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }} className="race-grid">
           <div>
-            <DecisionPanel gameState={gameState} playerId={playerId} onAction={onAction} />
-            {(!gameState.pendingDecision || gameState.pendingDecision.playerId !== playerId) && (
-              <p style={{ color: '#888', marginTop: '12px' }}>Waiting for other players to choose...</p>
+            {hasChosen ? (
+              <div style={{ background: '#16213e', borderRadius: '12px', padding: '16px' }}>
+                <p style={{ color: '#4ade80', fontWeight: 'bold', marginBottom: '8px' }}>
+                  You've chosen your racer!
+                </p>
+                <p style={{ color: '#888' }}>
+                  Waiting for others... ({chosenCount}/{totalPlayers} ready)
+                </p>
+              </div>
+            ) : (
+              <div>
+                <h3 style={{ marginBottom: '12px' }}>Pick a racer from your hand:</h3>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {myAvailable.map(name => (
+                    <RacerCard
+                      key={name}
+                      racerName={name}
+                      size="small"
+                      clickable
+                      onClick={() => onAction({
+                        type: 'MAKE_DECISION',
+                        decision: { type: 'CHOOSE_RACE_RACER', racerName: name },
+                      })}
+                    />
+                  ))}
+                </div>
+              </div>
             )}
           </div>
           <ScoreBoard gameState={gameState} playerId={playerId} />

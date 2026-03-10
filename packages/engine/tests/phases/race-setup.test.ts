@@ -1,28 +1,31 @@
 import { describe, it, expect } from 'vitest';
-import { processRacerChoice, allRacersChosen } from '../../src/phases/race-setup.js';
+import { processRacerChoice, allRacersChosen, hasPlayerChosen } from '../../src/phases/race-setup.js';
 import { createInitialState } from '../../src/state.js';
 import type { GameState, Player } from '../../src/types.js';
 
 function makeRaceSetupState(): GameState {
   const players: Player[] = [
     { id: 'p1', name: 'P1', isAI: false, hand: ['alchemist', 'banana', 'centaur'], usedRacers: [] },
-    { id: 'p2', name: 'P2', isAI: false, hand: ['blimp', 'coach', 'dragon' as any], usedRacers: [] },
+    { id: 'p2', name: 'P2', isAI: false, hand: ['blimp', 'coach', 'duelist'], usedRacers: [] },
   ];
   const state = createInitialState(players);
-  // Manually fix hand since createInitialState doesn't set hands
   state.players = players;
   state.phase = 'RACE_SETUP';
   return state;
 }
 
-describe('Race Setup Phase', () => {
-  it('should allow a player to choose a racer from their hand', () => {
+describe('Race Setup Phase (simultaneous selection)', () => {
+  it('should record a player choice without revealing', () => {
     const state = makeRaceSetupState();
     const result = processRacerChoice(state, 'p1', 'alchemist');
 
     expect(result.error).toBeUndefined();
-    const p1 = result.state!.players.find(p => p.id === 'p1')!;
-    expect(p1.usedRacers).toContain('alchemist');
+    // Still in RACE_SETUP (waiting for p2)
+    expect(result.state!.phase).toBe('RACE_SETUP');
+    // Choice recorded
+    expect(result.state!.raceSetupChoices['p1']).toBe('alchemist');
+    // No activeRacers yet
+    expect(result.state!.activeRacers).toHaveLength(0);
   });
 
   it('should reject choosing a racer not in hand', () => {
@@ -38,26 +41,30 @@ describe('Race Setup Phase', () => {
     expect(result.error).toBeDefined();
   });
 
-  it('should transition to RACING when all players have chosen', () => {
+  it('should transition to RACING when all players have chosen (simultaneous reveal)', () => {
     let state = makeRaceSetupState();
-    const r1 = processRacerChoice(state, 'p1', 'alchemist');
-    state = r1.state!;
-    const r2 = processRacerChoice(state, 'p2', 'blimp');
-    state = r2.state!;
+    state = processRacerChoice(state, 'p1', 'alchemist').state!;
+    expect(state.phase).toBe('RACE_SETUP'); // p2 hasn't chosen yet
 
-    expect(state.phase).toBe('RACING');
+    state = processRacerChoice(state, 'p2', 'blimp').state!;
+    expect(state.phase).toBe('RACING'); // both chose → revealed
     expect(state.activeRacers).toHaveLength(2);
     expect(state.activeRacers[0].racerName).toBe('alchemist');
     expect(state.activeRacers[0].playerId).toBe('p1');
-    expect(state.activeRacers[0].position).toBe(0); // start
-    expect(state.activeRacers[0].tripped).toBe(false);
-    expect(state.activeRacers[0].finished).toBe(false);
+    expect(state.activeRacers[0].position).toBe(0);
+    expect(state.activeRacers[1].racerName).toBe('blimp');
+    // raceSetupChoices should be cleared
+    expect(state.raceSetupChoices).toEqual({});
+    // usedRacers updated
+    expect(state.players[0].usedRacers).toContain('alchemist');
+    expect(state.players[1].usedRacers).toContain('blimp');
   });
 
-  it('should not transition until all players choose', () => {
+  it('should reject duplicate choice from same player', () => {
     let state = makeRaceSetupState();
-    const r1 = processRacerChoice(state, 'p1', 'banana');
-    expect(r1.state!.phase).toBe('RACE_SETUP');
+    state = processRacerChoice(state, 'p1', 'alchemist').state!;
+    const result = processRacerChoice(state, 'p1', 'banana');
+    expect(result.error).toBeDefined();
   });
 
   it('sisyphus should get 4 point chips when entering race', () => {
@@ -74,5 +81,13 @@ describe('Race Setup Phase', () => {
 
     const sisyphus = state.activeRacers.find(r => r.racerName === 'sisyphus')!;
     expect(sisyphus.sisyphusChips).toBe(4);
+  });
+
+  it('hasPlayerChosen should work correctly', () => {
+    let state = makeRaceSetupState();
+    expect(hasPlayerChosen(state, 'p1')).toBe(false);
+    state = processRacerChoice(state, 'p1', 'alchemist').state!;
+    expect(hasPlayerChosen(state, 'p1')).toBe(true);
+    expect(hasPlayerChosen(state, 'p2')).toBe(false);
   });
 });

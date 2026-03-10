@@ -22,9 +22,15 @@ export function Draft({ gameState, playerId, onAction }: DraftProps) {
     });
   };
 
+  // Calculate which round we're in (each round = 2×playerCount picks)
+  const playerCount = gameState.players.length;
+  const picksPerRound = playerCount * 2;
+  const currentRound = Math.floor(gameState.draftCurrentIndex / picksPerRound) + 1;
+  const totalRounds = Math.ceil(gameState.draftOrder.length / picksPerRound);
+
   return (
     <div className="page">
-      <h1>Draft Phase</h1>
+      <h1>Draft Phase — Round {currentRound} of {totalRounds}</h1>
       <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <p>
           {isMyTurn ? (

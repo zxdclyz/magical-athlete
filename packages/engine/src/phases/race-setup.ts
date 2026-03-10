@@ -1,8 +1,10 @@
 import type { GameState, GameEvent, RacerName, ActiveRacer } from '../types.js';
 
-// Track which players have chosen for the current race
-const raceChoices = new Map<string, RacerName>();
-
+/**
+ * A player submits their secret racer choice for the upcoming race.
+ * Choices are stored in raceSetupChoices until everyone has chosen,
+ * then all are revealed simultaneously.
+ */
 export function processRacerChoice(
   state: GameState,
   playerId: string,
@@ -25,52 +27,69 @@ export function processRacerChoice(
     return { error: `Racer ${racerName} has already been used` };
   }
 
-  // Check if player already chose this race (from activeRacers being built)
-  const existingChoice = state.activeRacers.find(r => r.playerId === playerId);
-  if (existingChoice) {
+  // Check if player already chose this race
+  if (state.raceSetupChoices[playerId]) {
     return { error: 'You already chose a racer for this race' };
   }
 
-  // Mark racer as used
+  // Record the secret choice
+  const raceSetupChoices = { ...state.raceSetupChoices, [playerId]: racerName };
+
+  // Check if all players have chosen
+  const allChosen = state.players.every(p => raceSetupChoices[p.id]);
+
+  if (!allChosen) {
+    // Just record the choice, stay in RACE_SETUP
+    return {
+      state: { ...state, raceSetupChoices },
+      events: [],
+    };
+  }
+
+  // All chosen — reveal simultaneously!
+  // Mark racers as used and create ActiveRacers
   const players = state.players.map(p => {
-    if (p.id === playerId) {
-      return { ...p, usedRacers: [...p.usedRacers, racerName] };
-    }
-    return p;
+    const chosen = raceSetupChoices[p.id];
+    return { ...p, usedRacers: [...p.usedRacers, chosen] };
   });
 
-  // Create ActiveRacer
-  const newRacer: ActiveRacer = {
-    racerName,
-    playerId,
-    position: 0,
-    tripped: false,
-    finished: false,
-    finishOrder: null,
-    eliminated: false,
-    ...(racerName === 'sisyphus' ? { sisyphusChips: 4 } : {}),
-  };
-
-  const activeRacers = [...state.activeRacers, newRacer];
-  const allChosen = activeRacers.length === state.players.length;
+  const activeRacers: ActiveRacer[] = state.players.map(p => {
+    const chosen = raceSetupChoices[p.id];
+    return {
+      racerName: chosen,
+      playerId: p.id,
+      position: 0,
+      tripped: false,
+      finished: false,
+      finishOrder: null,
+      eliminated: false,
+      ...(chosen === 'sisyphus' ? { sisyphusChips: 4 } : {}),
+    };
+  });
 
   const newState: GameState = {
     ...state,
     players,
     activeRacers,
-    phase: allChosen ? 'RACING' : 'RACE_SETUP',
-    turnOrder: allChosen ? players.map(p => p.id) : state.turnOrder,
-    currentTurnIndex: allChosen ? 0 : state.currentTurnIndex,
+    phase: 'RACING',
+    turnOrder: players.map(p => p.id),
+    currentTurnIndex: 0,
+    raceSetupChoices: {},
   };
 
-  const events: GameEvent[] = [];
-  if (allChosen) {
-    events.push({ type: 'PHASE_CHANGED', phase: 'RACING' });
-  }
-
-  return { state: newState, events };
+  return {
+    state: newState,
+    events: [{ type: 'PHASE_CHANGED', phase: 'RACING' }],
+  };
 }
 
 export function allRacersChosen(state: GameState): boolean {
-  return state.activeRacers.length === state.players.length;
+  return state.players.every(p => state.raceSetupChoices[p.id]);
+}
+
+/**
+ * Check if a specific player has already chosen for this race.
+ */
+export function hasPlayerChosen(state: GameState, playerId: string): boolean {
+  return !!state.raceSetupChoices[playerId];
 }
