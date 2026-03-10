@@ -20,6 +20,12 @@ import { lackeyHandler } from './lackey.js';
 import { skipperHandler } from './skipper.js';
 import { sisyphusHandler } from './sisyphus.js';
 import { dicemongerHandler } from './dicemonger.js';
+import { flipFlopHandler } from './flip-flop.js';
+import { legsHandler } from './legs.js';
+import { hypnotistHandler } from './hypnotist.js';
+import { cheerleaderHandler } from './cheerleader.js';
+import { thirdWheelHandler } from './third-wheel.js';
+import { partyAnimalHandler } from './party-animal.js';
 
 // All registered ability handlers
 const ALL_HANDLERS: AbilityHandler[] = [
@@ -44,6 +50,12 @@ const ALL_HANDLERS: AbilityHandler[] = [
   skipperHandler,
   sisyphusHandler,
   dicemongerHandler,
+  flipFlopHandler,
+  legsHandler,
+  hypnotistHandler,
+  cheerleaderHandler,
+  thirdWheelHandler,
+  partyAnimalHandler,
 ];
 
 /**
