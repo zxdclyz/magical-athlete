@@ -4,6 +4,7 @@ export * from './racers.js';
 export * from './state.js';
 export * from './events.js';
 export * from './game.js';
+export * from './ai.js';
 export * from './phases/draft.js';
 export * from './phases/race-setup.js';
 export * from './phases/racing.js';
