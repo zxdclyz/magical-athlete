@@ -26,6 +26,13 @@ import { hypnotistHandler } from './hypnotist.js';
 import { cheerleaderHandler } from './cheerleader.js';
 import { thirdWheelHandler } from './third-wheel.js';
 import { partyAnimalHandler } from './party-animal.js';
+import { magicianHandler } from './magician.js';
+import { rocketScientistHandler } from './rocket-scientist.js';
+import { geniusHandler, geniusDiceCheckHandler } from './genius.js';
+import { mastermindHandler } from './mastermind.js';
+import { copyCatHandler } from './copy-cat.js';
+import { leaptoadHandler } from './leaptoad.js';
+import { suckerfishHandler } from './suckerfish.js';
 
 // All registered ability handlers
 const ALL_HANDLERS: AbilityHandler[] = [
@@ -56,6 +63,14 @@ const ALL_HANDLERS: AbilityHandler[] = [
   cheerleaderHandler,
   thirdWheelHandler,
   partyAnimalHandler,
+  magicianHandler,
+  rocketScientistHandler,
+  geniusHandler,
+  geniusDiceCheckHandler,
+  mastermindHandler,
+  copyCatHandler,
+  leaptoadHandler,
+  suckerfishHandler,
 ];
 
 /**
