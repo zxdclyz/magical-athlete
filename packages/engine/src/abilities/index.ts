@@ -8,6 +8,13 @@ import { hareMovementHandler, hareLeadHandler } from './hare.js';
 import { lovableLoserHandler } from './lovable-loser.js';
 import { sticklerHandler } from './stickler.js';
 import { hecklerHandler } from './heckler.js';
+import { bananaHandler } from './banana.js';
+import { centaurHandler } from './centaur.js';
+import { babaYagaHandler } from './baba-yaga.js';
+import { duelistHandler } from './duelist.js';
+import { mouthHandler } from './mouth.js';
+import { romanticHandler } from './romantic.js';
+import { hugeBabyHandler } from './huge-baby.js';
 
 // All registered ability handlers
 const ALL_HANDLERS: AbilityHandler[] = [
@@ -20,6 +27,13 @@ const ALL_HANDLERS: AbilityHandler[] = [
   lovableLoserHandler,
   sticklerHandler,
   hecklerHandler,
+  bananaHandler,
+  centaurHandler,
+  babaYagaHandler,
+  duelistHandler,
+  mouthHandler,
+  romanticHandler,
+  hugeBabyHandler,
 ];
 
 /**
