@@ -24,11 +24,12 @@ button {
   border-radius: 6px;
   font-size: 14px;
   font-weight: 600;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, transform 0.1s;
 }
 
-button:hover { opacity: 0.85; }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
+button:hover { opacity: 0.85; transform: translateY(-1px); }
+button:active { transform: translateY(0); }
+button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
 .btn-primary { background: #e94560; color: white; }
 .btn-secondary { background: #16213e; color: #e0e0e0; border: 1px solid #0f3460; }
@@ -46,10 +47,116 @@ input:focus { outline: none; border-color: #e94560; }
 h1, h2, h3 { color: #e94560; }
 
 .page {
-  max-width: 1000px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 24px;
   width: 100%;
 }
 
 .page h1 { margin-bottom: 24px; }
+
+/* Dice animation */
+@keyframes dice-spin {
+  0% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(90deg) scale(1.1); }
+  50% { transform: rotate(180deg) scale(1); }
+  75% { transform: rotate(270deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+.dice-rolling {
+  animation: dice-spin 0.4s ease-in-out;
+}
+
+.dice-face {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background: #fff;
+  color: #1a1a2e;
+  border-radius: 10px;
+  font-size: 28px;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  user-select: none;
+}
+
+/* Pulse for your-turn indicator */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 4px #e94560; }
+  50% { box-shadow: 0 0 16px #e94560; }
+}
+
+.your-turn {
+  animation: pulse-glow 1.5s ease-in-out infinite;
+  border: 2px solid #e94560;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+/* Ability trigger flash */
+@keyframes ability-flash {
+  0% { background: #e9c46a33; }
+  100% { background: transparent; }
+}
+
+.ability-triggered {
+  animation: ability-flash 0.8s ease-out;
+}
+
+/* Racer card hover tooltip */
+.racer-card {
+  position: relative;
+}
+
+.racer-card .tooltip {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0d1b2a;
+  border: 1px solid #0f3460;
+  border-radius: 8px;
+  padding: 10px;
+  width: 220px;
+  font-size: 12px;
+  z-index: 100;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.racer-card:hover .tooltip {
+  display: block;
+}
+
+/* Track scroll */
+.track-container {
+  overflow-x: auto;
+  padding: 12px 0;
+  scrollbar-width: thin;
+  scrollbar-color: #0f3460 transparent;
+}
+
+.track-container::-webkit-scrollbar {
+  height: 6px;
+}
+.track-container::-webkit-scrollbar-thumb {
+  background: #0f3460;
+  border-radius: 3px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page {
+    padding: 12px;
+  }
+  .page h1 {
+    font-size: 1.4em;
+  }
+  .race-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

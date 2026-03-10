@@ -1,6 +1,5 @@
-import type { GameState, DecisionRequest, RacerName } from '@magical-athlete/engine';
+import type { GameState, RacerName } from '@magical-athlete/engine';
 import { RACER_CARDS } from '@magical-athlete/engine';
-import { useState } from 'react';
 
 interface DecisionPanelProps {
   gameState: GameState;
@@ -13,7 +12,6 @@ function racerDisplay(name: RacerName): string {
 }
 
 export function DecisionPanel({ gameState, playerId, onAction }: DecisionPanelProps) {
-  const [dicePredict, setDicePredict] = useState(1);
   const pending = gameState.pendingDecision;
   if (!pending || pending.playerId !== playerId) return null;
 
@@ -83,16 +81,14 @@ export function DecisionPanel({ gameState, playerId, onAction }: DecisionPanelPr
 
       {request.type === 'PREDICT_DICE' && (
         <div>
-          <h3>Predict your dice roll (1-6)</h3>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px' }}>
-            <input
-              type="number" min={1} max={6} value={dicePredict}
-              onChange={e => setDicePredict(Number(e.target.value))}
-              style={{ width: '60px', textAlign: 'center' }}
-            />
-            <button className="btn-primary" onClick={() => makeDecision({ type: 'PREDICT_DICE', prediction: dicePredict })}>
-              Predict
-            </button>
+          <h3>Predict your dice roll</h3>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+            {[1,2,3,4,5,6].map(n => (
+              <button key={n} className="btn-primary" onClick={() => makeDecision({ type: 'PREDICT_DICE', prediction: n })}
+                style={{ width: '44px', height: '44px', fontSize: '18px', padding: 0 }}>
+                {n}
+              </button>
+            ))}
           </div>
         </div>
       )}

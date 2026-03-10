@@ -35,11 +35,9 @@ export function Track({ gameState, playerId }: TrackProps) {
       <h3 style={{ marginBottom: '8px' }}>
         Race {gameState.currentRace} — {gameState.trackConfig.name} ({gameState.trackConfig.side})
       </h3>
-      <div style={{
+      <div className="track-container" style={{
         display: 'flex',
         gap: '2px',
-        overflowX: 'auto',
-        padding: '8px 0',
       }}>
         {track.map((space, i) => {
           const here = racersByPos[i] ?? [];
