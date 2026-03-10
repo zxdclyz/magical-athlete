@@ -1,5 +1,6 @@
 import type { RacerName } from '@magical-athlete/engine';
 import { RACER_CARDS } from '@magical-athlete/engine';
+import { getRacerImageUrl } from '../assets/racerImages.ts';
 
 interface RacerCardProps {
   racerName: RacerName;
@@ -33,17 +34,22 @@ export function RacerCard({ racerName, size = 'medium', clickable, selected, onC
         if (clickable && !selected) (e.currentTarget as HTMLElement).style.borderColor = '#0f3460';
       }}
     >
-      <div style={{ fontWeight: 'bold', fontSize: isSmall ? '12px' : '14px', marginBottom: '4px' }}>
+      <img
+        src={getRacerImageUrl(racerName)}
+        alt={card.displayName}
+        style={{
+          width: '100%',
+          borderRadius: '4px',
+          marginBottom: '4px',
+          display: 'block',
+        }}
+      />
+      <div style={{ fontWeight: 'bold', fontSize: isSmall ? '12px' : '14px', marginBottom: '2px' }}>
         {card.displayName}
       </div>
-      <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>
+      <div style={{ fontSize: '10px', color: '#888' }}>
         {card.displayNameCn}
       </div>
-      {!isSmall && (
-        <div style={{ fontSize: '11px', color: '#aaa', lineHeight: '1.4' }}>
-          {card.abilityText}
-        </div>
-      )}
     </div>
   );
 }

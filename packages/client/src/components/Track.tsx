@@ -1,5 +1,6 @@
 import type { GameState } from '@magical-athlete/engine';
 import { RACER_CARDS } from '@magical-athlete/engine';
+import { getRacerImageUrl } from '../assets/racerImages.ts';
 
 interface TrackProps {
   gameState: GameState;
@@ -65,18 +66,25 @@ export function Track({ gameState, playerId }: TrackProps) {
                 const card = RACER_CARDS[r.racerName];
                 return (
                   <div key={r.racerName} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '2px',
                     background: isMe ? '#e94560' : '#555',
-                    color: '#fff',
                     borderRadius: '4px',
                     padding: '1px 3px',
                     margin: '2px 0',
-                    fontSize: '9px',
-                    fontWeight: isMe ? 'bold' : 'normal',
                     opacity: r.tripped ? 0.5 : 1,
                   }}
                     title={`${card.displayName}${r.tripped ? ' (tripped)' : ''}${r.finished ? ' (finished)' : ''}`}
                   >
-                    {card.displayName.slice(0, 5)}
+                    <img
+                      src={getRacerImageUrl(r.racerName)}
+                      alt={card.displayName}
+                      style={{ width: '20px', height: '20px', borderRadius: '3px', objectFit: 'cover' }}
+                    />
+                    <span style={{ color: '#fff', fontSize: '8px', fontWeight: isMe ? 'bold' : 'normal' }}>
+                      {card.displayName.slice(0, 4)}
+                    </span>
                   </div>
                 );
               })}
