@@ -172,6 +172,10 @@ export function executeTurn(
     return { state: currentState, events: allEvents };
   }
 
+  // Record turn start position for Heckler
+  const turnStartPositions = { ...currentState.turnStartPositions, [playerId]: racer.position };
+  currentState = { ...currentState, turnStartPositions };
+
   if (racer.tripped) {
     // Untrip and skip
     const activeRacers = currentState.activeRacers.map(r => {

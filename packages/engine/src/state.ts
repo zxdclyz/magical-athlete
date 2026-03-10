@@ -74,5 +74,8 @@ export function createInitialState(players: Player[]): GameState {
     // 特殊回合
     extraTurnPlayerId: null,
     skipperNextPlayerId: null,
+
+    // 回合开始位置
+    turnStartPositions: {},
   };
 }

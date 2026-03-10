@@ -157,6 +157,9 @@ export interface GameState {
 
   // Skipper 插队
   skipperNextPlayerId: string | null;
+
+  // 回合开始时的位置（用于 Heckler 判定）
+  turnStartPositions: Record<string, number>;
 }
 
 // ============ 玩家动作 ============
