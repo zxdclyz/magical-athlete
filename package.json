@@ -1,0 +1,10 @@
+{
+  "name": "magical-athlete",
+  "private": true,
+  "scripts": {
+    "dev:server": "pnpm --filter @magical-athlete/server dev",
+    "dev:client": "pnpm --filter @magical-athlete/client dev",
+    "test": "pnpm --filter @magical-athlete/engine test",
+    "test:watch": "pnpm --filter @magical-athlete/engine test:watch"
+  }
+}
