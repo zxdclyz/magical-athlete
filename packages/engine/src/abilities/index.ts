@@ -15,6 +15,11 @@ import { duelistHandler } from './duelist.js';
 import { mouthHandler } from './mouth.js';
 import { romanticHandler } from './romantic.js';
 import { hugeBabyHandler } from './huge-baby.js';
+import { inchwormHandler } from './inchworm.js';
+import { lackeyHandler } from './lackey.js';
+import { skipperHandler } from './skipper.js';
+import { sisyphusHandler } from './sisyphus.js';
+import { dicemongerHandler } from './dicemonger.js';
 
 // All registered ability handlers
 const ALL_HANDLERS: AbilityHandler[] = [
@@ -34,6 +39,11 @@ const ALL_HANDLERS: AbilityHandler[] = [
   mouthHandler,
   romanticHandler,
   hugeBabyHandler,
+  inchwormHandler,
+  lackeyHandler,
+  skipperHandler,
+  sisyphusHandler,
+  dicemongerHandler,
 ];
 
 /**
