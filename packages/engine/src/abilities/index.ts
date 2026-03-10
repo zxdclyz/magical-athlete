@@ -33,6 +33,9 @@ import { mastermindHandler } from './mastermind.js';
 import { copyCatHandler } from './copy-cat.js';
 import { leaptoadHandler } from './leaptoad.js';
 import { suckerfishHandler } from './suckerfish.js';
+import { eggHandler } from './egg.js';
+import { twinHandler } from './twin.js';
+import { scoocherHandler } from './scoocher.js';
 
 // All registered ability handlers
 const ALL_HANDLERS: AbilityHandler[] = [
@@ -71,6 +74,9 @@ const ALL_HANDLERS: AbilityHandler[] = [
   copyCatHandler,
   leaptoadHandler,
   suckerfishHandler,
+  eggHandler,
+  twinHandler,
+  scoocherHandler,
 ];
 
 /**
