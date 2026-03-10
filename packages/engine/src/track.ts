@@ -4,7 +4,8 @@ function makeSpace(index: number, type: TrackSpace['type'] = 'normal', arrowDist
   return { index, type, ...(arrowDistance !== undefined ? { arrowDistance } : {}) };
 }
 
-function generateMildTrack1(): TrackSpace[] {
+// TODO: 格子数据是占位的，需要根据实际赛道图片校准
+function generateMildTrack(): TrackSpace[] {
   const spaces: TrackSpace[] = [];
   spaces.push(makeSpace(0, 'start'));
   for (let i = 1; i <= 18; i++) {
@@ -14,7 +15,8 @@ function generateMildTrack1(): TrackSpace[] {
   return spaces;
 }
 
-function generateWildTrack1(): TrackSpace[] {
+// TODO: 格子数据是占位的，需要根据实际赛道图片校准
+function generateWildTrack(): TrackSpace[] {
   return [
     makeSpace(0, 'start'),
     makeSpace(1, 'normal'),
@@ -39,48 +41,9 @@ function generateWildTrack1(): TrackSpace[] {
   ];
 }
 
-function generateMildTrack2(): TrackSpace[] {
-  const spaces: TrackSpace[] = [];
-  spaces.push(makeSpace(0, 'start'));
-  for (let i = 1; i <= 20; i++) {
-    spaces.push(makeSpace(i, 'normal'));
-  }
-  spaces.push(makeSpace(21, 'finish'));
-  return spaces;
-}
-
-function generateWildTrack2(): TrackSpace[] {
-  return [
-    makeSpace(0, 'start'),
-    makeSpace(1, 'normal'),
-    makeSpace(2, 'star'),
-    makeSpace(3, 'normal'),
-    makeSpace(4, 'normal'),
-    makeSpace(5, 'arrow', 2),
-    makeSpace(6, 'normal'),
-    makeSpace(7, 'trip'),
-    makeSpace(8, 'normal'),
-    makeSpace(9, 'normal'),
-    makeSpace(10, 'normal'),
-    makeSpace(11, 'normal'),
-    makeSpace(12, 'normal'),
-    makeSpace(13, 'normal'),
-    makeSpace(14, 'normal'),
-    makeSpace(15, 'trip'),
-    makeSpace(16, 'normal'),
-    makeSpace(17, 'star'),
-    makeSpace(18, 'arrow', -3),
-    makeSpace(19, 'normal'),
-    makeSpace(20, 'normal'),
-    makeSpace(21, 'finish'),
-  ];
-}
-
 const TRACK_CONFIGS: Record<string, TrackConfig> = {
-  mild1: { name: 'Track 1 - Mild', side: 'mild', secondCornerIndex: 12, spaces: generateMildTrack1() },
-  wild1: { name: 'Track 1 - Wild', side: 'wild', secondCornerIndex: 12, spaces: generateWildTrack1() },
-  mild2: { name: 'Track 2 - Mild', side: 'mild', secondCornerIndex: 14, spaces: generateMildTrack2() },
-  wild2: { name: 'Track 2 - Wild', side: 'wild', secondCornerIndex: 14, spaces: generateWildTrack2() },
+  mild: { name: 'Track - Mild', side: 'mild', secondCornerIndex: 12, spaces: generateMildTrack() },
+  wild: { name: 'Track - Wild', side: 'wild', secondCornerIndex: 12, spaces: generateWildTrack() },
 };
 
 export function createTrack(trackId: string): TrackConfig {
@@ -98,4 +61,5 @@ export function getSpacesAhead(track: TrackConfig, position: number, distance: n
   return Math.min(finishIndex, Math.max(0, position + distance));
 }
 
-export const RACE_TRACK_SEQUENCE = ['mild1', 'wild1', 'mild2', 'wild2'];
+// 4局比赛交替使用同一条赛道的两面: Mild → Wild → Mild → Wild
+export const RACE_TRACK_SEQUENCE = ['mild', 'wild', 'mild', 'wild'];
