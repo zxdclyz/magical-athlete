@@ -23,6 +23,7 @@ export function executeMovement(
   state: GameState,
   playerId: string,
   distance: number,
+  isMainMove: boolean = true,
 ): { state: GameState; events: GameEvent[] } {
   const events: GameEvent[] = [];
   const racerIndex = state.activeRacers.findIndex(r => r.playerId === playerId && !r.finished && !r.eliminated);
@@ -33,7 +34,7 @@ export function executeMovement(
   const finishIndex = state.track.length - 1;
   const to = Math.min(finishIndex, Math.max(0, from + distance));
 
-  events.push({ type: 'RACER_MOVING', racerName: racer.racerName, from, to, isMainMove: true });
+  events.push({ type: 'RACER_MOVING', racerName: racer.racerName, from, to, isMainMove });
 
   // Check for racers along the path (passed but not landed on)
   for (let pos = from + 1; pos < to; pos++) {
@@ -87,14 +88,9 @@ export function applyTrackSpaceEffect(
   if (!space) return { state, events };
 
   if (space.type === 'arrow' && space.arrowDistance !== undefined) {
-    const finishIndex = state.track.length - 1;
-    const newPos = Math.min(finishIndex, Math.max(0, racer.position + space.arrowDistance));
-    const activeRacers = state.activeRacers.map((r, i) => {
-      if (i !== racerIndex) return r;
-      return { ...r, position: newPos };
-    });
-    events.push({ type: 'RACER_WARPED', racerName, from: racer.position, to: newPos });
-    return { state: { ...state, activeRacers }, events };
+    // Arrow is a SEPARATE MOVE (not warp), triggers passing etc.
+    const moveResult = executeMovement(state, racer.playerId, space.arrowDistance, false);
+    return { state: moveResult.state, events: moveResult.events };
   }
 
   if (space.type === 'trip') {
@@ -126,7 +122,10 @@ export function checkRaceEnd(state: GameState): boolean {
   if (finishers >= 2) return true;
 
   const active = state.activeRacers.filter(r => !r.finished && !r.eliminated).length;
-  return active === 0;
+  if (active === 0) return true;
+  // M.O.U.T.H. rule: race ends if only 1 racer left (all others eliminated/finished)
+  if (active <= 1) return true;
+  return false;
 }
 
 /**

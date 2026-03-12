@@ -51,15 +51,15 @@ describe('Racing Phase - Basic Turn', () => {
 
     it('should not move past the finish line', () => {
       const state = makeRacingState();
-      state.activeRacers[0].position = 18; // one before finish (index 19)
+      state.activeRacers[0].position = 27; // one before finish
       const result = executeMovement(state, 'p1', 5);
 
-      expect(result.state.activeRacers[0].position).toBe(19); // capped at finish
+      expect(result.state.activeRacers[0].position).toBe(28); // capped at finish
     });
 
     it('should mark racer as finished when reaching finish', () => {
       const state = makeRacingState();
-      state.activeRacers[0].position = 17;
+      state.activeRacers[0].position = 26;
       const result = executeMovement(state, 'p1', 3);
 
       const racer = result.state.activeRacers.find(r => r.playerId === 'p1')!;
@@ -75,9 +75,9 @@ describe('Racing Phase - Basic Turn', () => {
       // p1 already finished
       state.activeRacers[0].finished = true;
       state.activeRacers[0].finishOrder = 1;
-      state.activeRacers[0].position = 19;
+      state.activeRacers[0].position = 28;
       // p2 about to finish
-      state.activeRacers[1].position = 17;
+      state.activeRacers[1].position = 26;
       const result = executeMovement(state, 'p2', 3);
 
       const racer = result.state.activeRacers.find(r => r.playerId === 'p2')!;
@@ -106,11 +106,8 @@ describe('Racing Phase - Basic Turn', () => {
   });
 
   describe('applyTrackSpaceEffect', () => {
-    it('should apply arrow effect (move additional spaces)', () => {
+    it('should apply arrow effect as a separate move (not warp)', () => {
       const state = makeRacingState();
-      // Put racer at position 3 which is arrow +3 on wild track
-      state.trackConfig = { name: 'wild', side: 'wild', secondCornerIndex: 12, spaces: state.track };
-      // Override track to have arrow at position 3
       state.track = [
         ...state.track.slice(0, 3),
         { index: 3, type: 'arrow' as const, arrowDistance: 3 },
@@ -120,6 +117,14 @@ describe('Racing Phase - Basic Turn', () => {
       state.activeRacers[0].position = 3;
 
       const result = applyTrackSpaceEffect(state, 'alchemist');
+
+      // Should emit RACER_MOVING, not RACER_WARPED
+      expect(result.events.some(e => e.type === 'RACER_MOVING')).toBe(true);
+      expect(result.events.some(e => e.type === 'RACER_WARPED')).toBe(false);
+      // Should be marked as non-main move
+      const moveEvent = result.events.find(e => e.type === 'RACER_MOVING') as any;
+      expect(moveEvent.isMainMove).toBe(false);
+      // Racer should be at position 6
       expect(result.state.activeRacers[0].position).toBe(6);
     });
 
@@ -160,6 +165,20 @@ describe('Racing Phase - Basic Turn', () => {
       expect(racer.position).toBe(0);
       expect(racer.tripped).toBe(false); // untripped after skipping
     });
+
+    it('should skip main move but still emit TURN_START/TURN_END when tripped', () => {
+      const state = makeRacingState();
+      state.activeRacers[0].tripped = true;
+      const result = executeTurn(state, 'p1');
+
+      expect(result.events.some(e => e.type === 'TURN_START')).toBe(true);
+      expect(result.events.some(e => e.type === 'TURN_END')).toBe(true);
+      // Should NOT have a DICE_ROLLED event (main move skipped)
+      expect(result.events.some(e => e.type === 'DICE_ROLLED')).toBe(false);
+      // Should be untripped after
+      const racer = result.state.activeRacers.find(r => r.playerId === 'p1')!;
+      expect(racer.tripped).toBe(false);
+    });
   });
 
   describe('advanceTurn', () => {
@@ -193,11 +212,12 @@ describe('Racing Phase - Basic Turn', () => {
   });
 
   describe('checkRaceEnd', () => {
-    it('should not end race with fewer than 2 finishers', () => {
+    it('should end race when only 1 racer remains (M.O.U.T.H. rule)', () => {
       const state = makeRacingState();
       state.activeRacers[0].finished = true;
       state.activeRacers[0].finishOrder = 1;
-      expect(checkRaceEnd(state)).toBe(false);
+      // Only 1 active racer left → race ends
+      expect(checkRaceEnd(state)).toBe(true);
     });
 
     it('should end race when 2 racers have finished', () => {

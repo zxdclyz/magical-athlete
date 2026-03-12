@@ -8,6 +8,8 @@ import { mastermindHandler, mastermindCheckHandler } from '../../src/abilities/m
 import { copyCatHandler } from '../../src/abilities/copy-cat.js';
 import { leaptoadHandler } from '../../src/abilities/leaptoad.js';
 import { suckerfishHandler } from '../../src/abilities/suckerfish.js';
+import { checkRaceEnd } from '../../src/phases/racing.js';
+import { assignRaceChips } from '../../src/phases/scoring.js';
 import type { GameState, Player, ActiveRacer } from '../../src/types.js';
 
 function makeState(racers: Partial<ActiveRacer>[]): GameState {
@@ -315,5 +317,41 @@ describe('Suckerfish', () => {
       state,
     );
     expect(result.pendingDecision).toBeNull();
+  });
+});
+
+describe('M.O.U.T.H. race end conditions', () => {
+  it('checkRaceEnd should return true when only 1 racer remains', () => {
+    const state = makeState([
+      { racerName: 'mouth', position: 5 },
+      { racerName: 'alchemist', position: 3, eliminated: true },
+      { racerName: 'blimp', position: 5, eliminated: true },
+    ]);
+    expect(checkRaceEnd(state)).toBe(true);
+  });
+
+  it('checkRaceEnd should return false when 2+ racers still active', () => {
+    const state = makeState([
+      { racerName: 'mouth', position: 5 },
+      { racerName: 'alchemist', position: 3 },
+      { racerName: 'blimp', position: 5, eliminated: true },
+    ]);
+    expect(checkRaceEnd(state)).toBe(false);
+  });
+
+  it('should not award silver chip when no 2nd place finisher', () => {
+    const state = makeState([
+      { racerName: 'mouth', position: 28, finished: true, finishOrder: 1 },
+      { racerName: 'alchemist', position: 3, eliminated: true },
+      { racerName: 'blimp', position: 5, eliminated: true },
+    ]);
+    state.currentRace = 1;
+    state.scores = { p1: 0, p2: 0, p3: 0 };
+
+    const result = assignRaceChips(state);
+    const goldEvent = result.events.find(e => e.type === 'POINT_CHIP_GAINED' && e.chipType === 'gold');
+    expect(goldEvent).toBeDefined();
+    const silverEvent = result.events.find(e => e.type === 'POINT_CHIP_GAINED' && e.chipType === 'silver');
+    expect(silverEvent).toBeUndefined();
   });
 });
