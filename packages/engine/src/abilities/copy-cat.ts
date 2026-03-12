@@ -11,25 +11,44 @@ export const copyCatHandler: AbilityHandler = {
     const racer = state.activeRacers.find(r => r.racerName === 'copy_cat' && !r.finished && !r.eliminated);
     return !!racer && racer.playerId === event.playerId;
   },
-  execute(event, state) {
+  getDecisionRequest(event, state) {
+    if (event.type !== 'TURN_START') return null;
+    const activeRacers = state.activeRacers.filter(r => !r.finished && !r.eliminated && r.racerName !== 'copy_cat');
+    if (activeRacers.length === 0) return null;
+    const maxPos = Math.max(...activeRacers.map(r => r.position));
+    const leaders = activeRacers.filter(r => r.position === maxPos);
+    if (leaders.length > 1) {
+      return {
+        type: 'CHOOSE_COPIED_ABILITY' as const,
+        racerName: 'copy_cat' as const,
+        candidates: leaders.map(r => r.racerName),
+      };
+    }
+    return null;
+  },
+  execute(event, state, decision) {
     if (event.type !== 'TURN_START') return { state, events: [] };
-    // Find the leader(s)
     const activeRacers = state.activeRacers.filter(r => !r.finished && !r.eliminated && r.racerName !== 'copy_cat');
     if (activeRacers.length === 0) return { state, events: [] };
 
-    const maxPos = Math.max(...activeRacers.map(r => r.position));
-    const leaders = activeRacers.filter(r => r.position === maxPos);
-    const leaderName = leaders[0].racerName; // Pick first if tied (decision can be added later)
+    let leaderName: string;
+    if (decision && decision.type === 'CHOOSE_COPIED_ABILITY') {
+      leaderName = decision.racerName;
+    } else {
+      const maxPos = Math.max(...activeRacers.map(r => r.position));
+      const leaders = activeRacers.filter(r => r.position === maxPos);
+      leaderName = leaders[0].racerName;
+    }
 
     const newRacers = state.activeRacers.map(r => {
-      if (r.racerName === 'copy_cat') return { ...r, copiedAbility: leaderName };
+      if (r.racerName === 'copy_cat') return { ...r, copiedAbility: leaderName as any };
       return r;
     });
 
     return {
       state: { ...state, activeRacers: newRacers },
       events: [
-        { type: 'ABILITY_TRIGGERED', racerName: 'copy_cat', abilityName: 'Copy Cat', description: `Copying ${leaderName}'s ability` },
+        { type: 'ABILITY_TRIGGERED', racerName: 'copy_cat', abilityName: '模仿猫', description: `模仿了${leaderName}的能力` },
       ],
     };
   },
