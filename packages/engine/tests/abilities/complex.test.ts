@@ -4,7 +4,7 @@ import { createInitialState } from '../../src/state.js';
 import { magicianHandler } from '../../src/abilities/magician.js';
 import { rocketScientistHandler } from '../../src/abilities/rocket-scientist.js';
 import { geniusHandler } from '../../src/abilities/genius.js';
-import { mastermindHandler } from '../../src/abilities/mastermind.js';
+import { mastermindHandler, mastermindCheckHandler } from '../../src/abilities/mastermind.js';
 import { copyCatHandler } from '../../src/abilities/copy-cat.js';
 import { leaptoadHandler } from '../../src/abilities/leaptoad.js';
 import { suckerfishHandler } from '../../src/abilities/suckerfish.js';
@@ -52,7 +52,7 @@ describe('Magician', () => {
       { type: 'DICE_ROLLED', playerId: 'p1', value: 2 },
     );
     expect(result.events).toContainEqual(
-      expect.objectContaining({ type: 'DICE_MODIFIED', reason: 'Magician reroll' }),
+      expect.objectContaining({ type: 'DICE_MODIFIED', reason: 'Magician reroll 1' }),
     );
   });
 
@@ -134,6 +134,36 @@ describe('Mastermind', () => {
     );
     const mm = result.state.activeRacers.find(r => r.racerName === 'mastermind')!;
     expect(mm.mastermindPrediction).toBe('alchemist');
+  });
+
+  it('should include mastermind in prediction candidates', () => {
+    const engine = new EventEngine();
+    engine.registerHandler(mastermindHandler);
+    const state = makeState([
+      { racerName: 'mastermind', position: 0 },
+      { racerName: 'alchemist', position: 0 },
+    ]);
+    const result = engine.processEvent({ type: 'TURN_START', playerId: 'p1' }, state);
+    expect(result.pendingDecision).toBeDefined();
+    expect(result.pendingDecision!.request.candidates).toContain('mastermind');
+  });
+
+  it('should give mastermind 2nd place when self-prediction correct', () => {
+    const engine = new EventEngine();
+    engine.registerHandler(mastermindCheckHandler);
+    const state = makeState([
+      { racerName: 'mastermind', position: 0, mastermindPrediction: 'mastermind' as any },
+      { racerName: 'alchemist', position: 0 },
+    ]);
+    const result = engine.processEvent(
+      { type: 'RACER_FINISHED', racerName: 'mastermind', place: 1 },
+      state,
+    );
+    const mm = result.state.activeRacers.find(r => r.racerName === 'mastermind')!;
+    expect(mm.finished).toBe(true);
+    expect(result.events).toContainEqual(
+      expect.objectContaining({ type: 'RACER_FINISHED', racerName: 'mastermind', place: 2 }),
+    );
   });
 
   it('should not trigger after first turn (prediction already stored)', () => {
