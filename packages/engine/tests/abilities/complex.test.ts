@@ -214,6 +214,48 @@ describe('Leaptoad', () => {
     expect(result.state.activeRacers[0].position).toBe(5);
   });
 
+  it('should skip occupied spaces when moving backwards', () => {
+    const engine = new EventEngine();
+    engine.registerHandler(leaptoadHandler);
+
+    // Leaptoad at 10, moving back 3 steps. Position 9 is occupied.
+    const state = makeState([
+      { racerName: 'leaptoad', position: 10 },
+      { racerName: 'alchemist', position: 9 },
+      { racerName: 'blimp', position: 5 },
+    ]);
+
+    // Move from 10 to 7 (back 3 steps)
+    const result = engine.processEvent(
+      { type: 'RACER_MOVING', racerName: 'leaptoad', from: 10, to: 7, isMainMove: true },
+      state,
+    );
+
+    // Position 9 occupied → skip. Steps: 10→9(skip)→8(1)→7(2)→6(3)
+    const leaptoad = result.state.activeRacers.find(r => r.racerName === 'leaptoad')!;
+    expect(leaptoad.position).toBe(6);
+  });
+
+  it('should still skip forward normally', () => {
+    const engine = new EventEngine();
+    engine.registerHandler(leaptoadHandler);
+
+    const state = makeState([
+      { racerName: 'leaptoad', position: 5 },
+      { racerName: 'alchemist', position: 7 },
+      { racerName: 'blimp', position: 3 },
+    ]);
+
+    const result = engine.processEvent(
+      { type: 'RACER_MOVING', racerName: 'leaptoad', from: 5, to: 9, isMainMove: true },
+      state,
+    );
+
+    // Position 7 occupied → skip. Steps: 5→6(1)→7(skip)→8(2)→9(3)→10(4)
+    const leaptoad = result.state.activeRacers.find(r => r.racerName === 'leaptoad')!;
+    expect(leaptoad.position).toBe(10);
+  });
+
   it('should not change position when no occupied spaces in path', () => {
     const engine = new EventEngine();
     engine.registerHandler(leaptoadHandler);

@@ -14,24 +14,22 @@ export const leaptoadHandler: AbilityHandler = {
     if (event.type !== 'RACER_MOVING') return { state, events: [] };
     const finishIndex = state.track.length - 1;
     let pos = event.from;
-    let stepsLeft = event.to - event.from;
-    if (stepsLeft <= 0) return { state, events: [] };
+    let stepsLeft = Math.abs(event.to - event.from);
+    const direction = event.to >= event.from ? 1 : -1;
 
-    // Walk step by step, skipping occupied spaces
-    while (stepsLeft > 0 && pos < finishIndex) {
-      pos++;
+    if (stepsLeft === 0) return { state, events: [] };
+
+    while (stepsLeft > 0) {
+      const nextPos = pos + direction;
+      if (nextPos < 0 || nextPos > finishIndex) break;
+      pos = nextPos;
       const occupied = state.activeRacers.some(
         r => r.racerName !== 'leaptoad' && r.position === pos && !r.finished && !r.eliminated
       );
-      if (occupied) {
-        // Skip this space — don't count it
-        continue;
-      }
+      if (occupied) continue;
       stepsLeft--;
     }
-
-    // Cap at finish
-    pos = Math.min(pos, finishIndex);
+    pos = Math.max(0, Math.min(pos, finishIndex));
 
     if (pos === event.to) return { state, events: [] }; // No change
 
@@ -43,7 +41,7 @@ export const leaptoadHandler: AbilityHandler = {
     return {
       state: { ...state, activeRacers },
       events: [
-        { type: 'ABILITY_TRIGGERED', racerName: 'leaptoad', abilityName: 'Leaptoad', description: `Leaped to space ${pos} (skipped occupied spaces)` },
+        { type: 'ABILITY_TRIGGERED', racerName: 'leaptoad', abilityName: '跳蛙', description: `跳到了第${pos}格（跳过了有角色的格子）` },
       ],
     };
   },
