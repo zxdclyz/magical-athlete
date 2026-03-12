@@ -8,6 +8,7 @@ import { mastermindHandler, mastermindCheckHandler } from '../../src/abilities/m
 import { copyCatHandler } from '../../src/abilities/copy-cat.js';
 import { leaptoadHandler } from '../../src/abilities/leaptoad.js';
 import { suckerfishHandler } from '../../src/abilities/suckerfish.js';
+import { cheerleaderHandler } from '../../src/abilities/cheerleader.js';
 import { checkRaceEnd } from '../../src/phases/racing.js';
 import { assignRaceChips } from '../../src/phases/scoring.js';
 import type { GameState, Player, ActiveRacer } from '../../src/types.js';
@@ -195,6 +196,39 @@ describe('Copy Cat', () => {
   });
 });
 
+describe('Copy Cat tied lead decision', () => {
+  it('should ask for decision when multiple leaders are tied', () => {
+    const engine = new EventEngine();
+    engine.registerHandler(copyCatHandler);
+
+    const state = makeState([
+      { racerName: 'copy_cat', position: 0 },
+      { racerName: 'alchemist', position: 10 },
+      { racerName: 'blimp', position: 10 },
+    ]);
+
+    const result = engine.processEvent({ type: 'TURN_START', playerId: 'p1' }, state);
+    expect(result.pendingDecision).toBeDefined();
+    expect(result.pendingDecision!.request.type).toBe('CHOOSE_COPIED_ABILITY');
+  });
+
+  it('should auto-pick when only one leader', () => {
+    const engine = new EventEngine();
+    engine.registerHandler(copyCatHandler);
+
+    const state = makeState([
+      { racerName: 'copy_cat', position: 0 },
+      { racerName: 'alchemist', position: 10 },
+      { racerName: 'blimp', position: 5 },
+    ]);
+
+    const result = engine.processEvent({ type: 'TURN_START', playerId: 'p1' }, state);
+    expect(result.pendingDecision).toBeNull();
+    const copyCat = result.state.activeRacers.find(r => r.racerName === 'copy_cat')!;
+    expect(copyCat.copiedAbility).toBe('alchemist');
+  });
+});
+
 describe('Leaptoad', () => {
   it('should skip occupied spaces during movement', () => {
     const engine = new EventEngine();
@@ -317,6 +351,31 @@ describe('Suckerfish', () => {
       state,
     );
     expect(result.pendingDecision).toBeNull();
+  });
+});
+
+describe('Cheerleader self-cheer', () => {
+  it('should apply both +2 (last place) and +1 (cheerleader) when self is in last', () => {
+    const engine = new EventEngine();
+    engine.registerHandler(cheerleaderHandler);
+
+    const state = makeState([
+      { racerName: 'cheerleader', position: 10 },
+      { racerName: 'alchemist', position: 28, finished: true, finishOrder: 1 },
+    ]);
+
+    const result = engine.processEvent({ type: 'TURN_START', playerId: 'p1' }, state);
+    expect(result.pendingDecision).toBeDefined();
+
+    const resumed = engine.resumeAfterDecision(
+      result.state,
+      { type: 'USE_ABILITY', use: true },
+      result.pendingDecision!.handlerIndex,
+      { type: 'TURN_START', playerId: 'p1' },
+    );
+
+    const cheerleader = resumed.state.activeRacers.find(r => r.racerName === 'cheerleader')!;
+    expect(cheerleader.position).toBe(13); // 10 + 2 + 1
   });
 });
 

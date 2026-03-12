@@ -15,34 +15,52 @@ export const cheerleaderHandler: AbilityHandler = {
     return {
       type: 'USE_ABILITY',
       racerName: 'cheerleader',
-      abilityDescription: 'Make last-place racer(s) move 2, and you move 1?',
+      abilityDescription: '让最后一名的角色前进2格，你前进1格？',
     };
   },
   execute(event, state, decision) {
     if (event.type !== 'TURN_START') return { state, events: [] };
     if (decision && decision.type === 'USE_ABILITY' && decision.use) {
-      const cheerleader = state.activeRacers.find(r => r.racerName === 'cheerleader')!;
       const activeRacers = state.activeRacers.filter(r => !r.finished && !r.eliminated);
       const minPos = Math.min(...activeRacers.map(r => r.position));
       const lastPlacers = activeRacers.filter(r => r.position === minPos);
       const finishIndex = state.track.length - 1;
 
       const events: import('../types.js').GameEvent[] = [
-        { type: 'ABILITY_TRIGGERED', racerName: 'cheerleader', abilityName: 'Cheerleader', description: 'Cheers for last place!' },
+        { type: 'ABILITY_TRIGGERED', racerName: 'cheerleader', abilityName: '啦啦队长', description: '为最后一名加油！' },
       ];
+      let finishCount = state.activeRacers.filter(r => r.finished).length;
 
-      const newRacers = state.activeRacers.map(r => {
-        // Move last placers 2
+      // Step 1: Move last-placers +2
+      let newRacers = state.activeRacers.map(r => {
         if (lastPlacers.some(lp => lp.racerName === r.racerName)) {
           const newPos = Math.min(finishIndex, r.position + 2);
           events.push({ type: 'RACER_MOVING', racerName: r.racerName, from: r.position, to: newPos, isMainMove: false });
-          return { ...r, position: newPos };
+          const updated = { ...r, position: newPos };
+          if (newPos >= finishIndex && !r.finished) {
+            finishCount++;
+            updated.finished = true;
+            updated.finishOrder = finishCount;
+            events.push({ type: 'RACER_FINISHED', racerName: r.racerName, place: finishCount });
+          }
+          return updated;
         }
-        // Move cheerleader 1
-        if (r.racerName === 'cheerleader') {
+        return r;
+      });
+
+      // Step 2: Move cheerleader +1 (always, even if already moved as last-placer)
+      newRacers = newRacers.map(r => {
+        if (r.racerName === 'cheerleader' && !r.finished) {
           const newPos = Math.min(finishIndex, r.position + 1);
           events.push({ type: 'RACER_MOVING', racerName: 'cheerleader', from: r.position, to: newPos, isMainMove: false });
-          return { ...r, position: newPos };
+          const updated = { ...r, position: newPos };
+          if (newPos >= finishIndex && !r.finished) {
+            finishCount++;
+            updated.finished = true;
+            updated.finishOrder = finishCount;
+            events.push({ type: 'RACER_FINISHED', racerName: 'cheerleader', place: finishCount });
+          }
+          return updated;
         }
         return r;
       });
