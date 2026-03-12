@@ -9,6 +9,9 @@ import { copyCatHandler } from '../../src/abilities/copy-cat.js';
 import { leaptoadHandler } from '../../src/abilities/leaptoad.js';
 import { suckerfishHandler } from '../../src/abilities/suckerfish.js';
 import { cheerleaderHandler } from '../../src/abilities/cheerleader.js';
+import { gunkHandler } from '../../src/abilities/gunk.js';
+import { lackeyHandler } from '../../src/abilities/lackey.js';
+import { bananaHandler } from '../../src/abilities/banana.js';
 import { checkRaceEnd } from '../../src/phases/racing.js';
 import { assignRaceChips } from '../../src/phases/scoring.js';
 import type { GameState, Player, ActiveRacer } from '../../src/types.js';
@@ -412,5 +415,66 @@ describe('M.O.U.T.H. race end conditions', () => {
     expect(goldEvent).toBeDefined();
     const silverEvent = result.events.find(e => e.type === 'POINT_CHIP_GAINED' && e.chipType === 'silver');
     expect(silverEvent).toBeUndefined();
+  });
+});
+
+describe('Gunk + Lackey interaction', () => {
+  it('Gunk should not prevent Lackey from triggering on roll of 6', () => {
+    const engine = new EventEngine();
+    engine.registerHandler(gunkHandler);
+    engine.registerHandler(lackeyHandler);
+
+    const state = makeState([
+      { racerName: 'gunk', position: 5 },
+      { racerName: 'lackey', position: 3 },
+      { racerName: 'alchemist', position: 0 },
+    ]);
+
+    const result = engine.processEvent(
+      { type: 'DICE_ROLLED', playerId: 'p3', value: 6 },
+      state,
+    );
+
+    const lackeyTriggered = result.events.some(
+      e => e.type === 'ABILITY_TRIGGERED' && e.racerName === 'lackey'
+    );
+    expect(lackeyTriggered).toBe(true);
+
+    const gunkTriggered = result.events.some(
+      e => e.type === 'ABILITY_TRIGGERED' && e.racerName === 'gunk'
+    );
+    expect(gunkTriggered).toBe(true);
+  });
+});
+
+describe('Suckerfish warp behavior', () => {
+  it('should not trigger Banana trip when following through Banana space', () => {
+    const engine = new EventEngine();
+    engine.registerHandler(suckerfishHandler);
+    engine.registerHandler(bananaHandler);
+
+    const state = makeState([
+      { racerName: 'suckerfish', position: 3 },
+      { racerName: 'alchemist', position: 3 },
+      { racerName: 'banana', position: 5 },
+    ]);
+
+    const result = engine.processEvent(
+      { type: 'RACER_MOVING', racerName: 'alchemist', from: 3, to: 7, isMainMove: true },
+      state,
+    );
+
+    expect(result.pendingDecision).toBeDefined();
+
+    const resumed = engine.resumeAfterDecision(
+      result.state,
+      { type: 'USE_ABILITY', use: true },
+      result.pendingDecision!.handlerIndex,
+      { type: 'RACER_MOVING', racerName: 'alchemist', from: 3, to: 7, isMainMove: true },
+    );
+
+    const suckerfish = resumed.state.activeRacers.find(r => r.racerName === 'suckerfish')!;
+    expect(suckerfish.position).toBe(7);
+    expect(suckerfish.tripped).toBe(false);
   });
 });
