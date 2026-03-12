@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { GameController } from '../../src/game.js';
 import { EventEngine } from '../../src/events.js';
 import { createInitialState } from '../../src/state.js';
-import { sticklerHandler } from '../../src/abilities/stickler.js';
+import { sticklerHandler, sticklerMovementHandler } from '../../src/abilities/stickler.js';
 import { blimpHandler } from '../../src/abilities/blimp.js';
 import { partyAnimalMoveHandler, partyAnimalBonusHandler } from '../../src/abilities/party-animal.js';
 import { hecklerHandler } from '../../src/abilities/heckler.js';
@@ -492,5 +492,68 @@ describe('Skipper turn insertion', () => {
     );
     expect(result2.state.skipperNextPlayerId).toBe('p1');
     expect(result2.state.extraTurnPlayerId).toBeNull();
+  });
+});
+
+describe('Stickler blocks ability-caused movement overshooting finish', () => {
+  it('should block Heckler ability movement that overshoots finish', () => {
+    const engine = new EventEngine();
+    engine.registerHandler(hecklerHandler);
+    engine.registerHandler(sticklerMovementHandler);
+
+    // Heckler at 27, Stickler at 10, trackLength 29 (finish = 28)
+    const state = makeState([
+      { racerName: 'heckler', position: 27 },
+      { racerName: 'stickler', position: 10 },
+      { racerName: 'alchemist', position: 5 },
+    ], 29);
+    state.turnStartPositions = { p3: 5 };
+
+    // alchemist barely moves (from 5, moved 1 → 6). Heckler triggers +2 → 27+2=29 (overshoot, finish=28)
+    // Emit RACER_MOVING for heckler with isMainMove=false
+    const result = engine.processEvent(
+      { type: 'RACER_MOVING', racerName: 'heckler', from: 27, to: 29, isMainMove: false },
+      state,
+    );
+
+    // Stickler should have blocked — heckler stays at 27
+    const heckler = result.state.activeRacers.find(r => r.racerName === 'heckler')!;
+    expect(heckler.position).toBe(27);
+    expect(heckler.finished).toBeFalsy();
+
+    const sticklerTriggered = result.events.some(
+      e => e.type === 'ABILITY_TRIGGERED' && e.racerName === 'stickler'
+    );
+    expect(sticklerTriggered).toBe(true);
+  });
+
+  it('should NOT block exact ability movement to finish', () => {
+    const engine = new EventEngine();
+    engine.registerHandler(hecklerHandler);
+    engine.registerHandler(sticklerMovementHandler);
+
+    // Heckler at 26, trackLength 29 (finish = 28). +2 → exactly 28.
+    const state = makeState([
+      { racerName: 'heckler', position: 26 },
+      { racerName: 'stickler', position: 10 },
+      { racerName: 'alchemist', position: 5 },
+    ], 29);
+    state.turnStartPositions = { p3: 5 };
+
+    // RACER_MOVING for heckler: 26 → 28 (exact finish)
+    const result = engine.processEvent(
+      { type: 'RACER_MOVING', racerName: 'heckler', from: 26, to: 28, isMainMove: false },
+      state,
+    );
+
+    // Stickler should NOT have triggered — exact finish is allowed
+    const sticklerTriggered = result.events.some(
+      e => e.type === 'ABILITY_TRIGGERED' && e.racerName === 'stickler'
+    );
+    expect(sticklerTriggered).toBe(false);
+
+    // Heckler should NOT have been reset (position unchanged by stickler)
+    const heckler = result.state.activeRacers.find(r => r.racerName === 'heckler')!;
+    expect(heckler.position).toBe(26); // no position change from this handler alone
   });
 });
