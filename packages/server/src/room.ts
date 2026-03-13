@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   GameController,
   createInitialState,
@@ -10,13 +11,22 @@ import {
   type RacerName,
 } from '@magical-athlete/engine';
 
+export interface PlayerInfo {
+  playerId: string;
+  name: string;
+  socketId: string | null;
+  connected: boolean;
+}
+
 export interface RoomState {
   id: string;
   hostId: string;
-  players: Map<string, { socketId: string; name: string }>;
+  players: Map<string, PlayerInfo>;
   aiPlayers: Player[];
   gameState: GameState | null;
   controller: GameController;
+  seq: number;
+  cleanupTimer: ReturnType<typeof setTimeout> | null;
 }
 
 let nextAIId = 1;
@@ -28,23 +38,67 @@ const AI_NAMES = [
 ];
 
 export function createRoom(roomId: string, hostSocketId: string, hostName: string): RoomState {
+  const playerId = randomUUID();
   return {
     id: roomId,
-    hostId: hostSocketId,
-    players: new Map([[hostSocketId, { socketId: hostSocketId, name: hostName }]]),
+    hostId: playerId,
+    players: new Map([[playerId, { playerId, name: hostName, socketId: hostSocketId, connected: true }]]),
     aiPlayers: [],
     gameState: null,
     controller: new GameController(),
+    seq: 0,
+    cleanupTimer: null,
   };
 }
 
-export function addPlayer(room: RoomState, socketId: string, name: string): void {
-  room.players.set(socketId, { socketId, name });
+export function addPlayer(room: RoomState, socketId: string, name: string): string {
+  const playerId = randomUUID();
+  room.players.set(playerId, { playerId, name, socketId, connected: true });
+  return playerId;
 }
 
-export function removePlayer(room: RoomState, socketId: string): void {
-  room.players.delete(socketId);
+export function removePlayer(room: RoomState, playerId: string): void {
+  room.players.delete(playerId);
 }
+
+// --- Helper functions ---
+
+export function findPlayerBySocket(room: RoomState, socketId: string): PlayerInfo | undefined {
+  for (const info of room.players.values()) {
+    if (info.socketId === socketId) return info;
+  }
+  return undefined;
+}
+
+export function disconnectPlayer(room: RoomState, playerId: string): void {
+  const info = room.players.get(playerId);
+  if (info) {
+    info.socketId = null;
+    info.connected = false;
+  }
+}
+
+export function reconnectPlayer(room: RoomState, playerId: string, newSocketId: string): void {
+  const info = room.players.get(playerId);
+  if (info) {
+    info.socketId = newSocketId;
+    info.connected = true;
+  }
+}
+
+export function hasConnectedHumans(room: RoomState): boolean {
+  for (const info of room.players.values()) {
+    if (info.connected) return true;
+  }
+  return false;
+}
+
+export function isPlayerDisconnected(room: RoomState, playerId: string): boolean {
+  const info = room.players.get(playerId);
+  return info ? !info.connected : false;
+}
+
+// --- Existing functions ---
 
 export function addAI(room: RoomState, difficulty: 'easy' | 'normal'): Player {
   const aiId = `ai_${nextAIId++}`;
@@ -72,10 +126,10 @@ export function removeAI(room: RoomState, aiId: string): void {
 export function startGame(room: RoomState): { state: GameState; events: GameEvent[] } | { error: string } {
   const allPlayers: Player[] = [];
 
-  // Add human players
-  for (const [socketId, info] of room.players) {
+  // Add human players (keyed by playerId, not socketId)
+  for (const [playerId, info] of room.players) {
     allPlayers.push({
-      id: socketId,
+      id: playerId,
       name: info.name,
       isAI: false,
       hand: [],
@@ -115,12 +169,12 @@ export function startGame(room: RoomState): { state: GameState; events: GameEven
  */
 export function processPlayerAction(
   room: RoomState,
-  socketId: string,
+  playerId: string,
   action: { type: string; [key: string]: any },
 ): { state: GameState; events: GameEvent[] } | { error: string } {
   if (!room.gameState) return { error: 'Game not started' };
 
-  const result = room.controller.processAction(room.gameState, socketId, action as any);
+  const result = room.controller.processAction(room.gameState, playerId, action as any);
   if (result.error) return { error: result.error };
 
   room.gameState = result.state;
@@ -136,7 +190,7 @@ export function processPlayerAction(
 /**
  * Execute AI turns until a human player needs to act.
  */
-function executeAITurns(room: RoomState): { events: GameEvent[] } {
+export function executeAITurns(room: RoomState): { events: GameEvent[] } {
   if (!room.gameState) return { events: [] };
   const events: GameEvent[] = [];
   let maxIterations = 100; // Safety limit
@@ -157,7 +211,7 @@ function executeAITurns(room: RoomState): { events: GameEvent[] } {
 }
 
 /**
- * Check if the next action should be taken by an AI player.
+ * Check if the next action should be taken by an AI player or a disconnected human.
  */
 function getNextAIAction(
   state: GameState,
@@ -165,20 +219,31 @@ function getNextAIAction(
 ): { playerId: string; action: any } | null {
   const aiPlayerIds = new Set(room.aiPlayers.map(p => p.id));
 
+  // Helper: check if a player should be AI-controlled
+  // (either a real AI or a disconnected human)
+  function isAIControlled(pid: string): boolean {
+    return aiPlayerIds.has(pid) || isPlayerDisconnected(room, pid);
+  }
+
+  function getDifficulty(pid: string): 'easy' | 'normal' {
+    const ai = room.aiPlayers.find(p => p.id === pid);
+    return ai?.aiDifficulty || 'easy';
+  }
+
   switch (state.phase) {
     case 'DRAFTING': {
       const currentPlayerId = state.draftOrder[state.draftCurrentIndex];
-      if (!aiPlayerIds.has(currentPlayerId)) return null;
-      const ai = room.aiPlayers.find(p => p.id === currentPlayerId)!;
+      if (!isAIControlled(currentPlayerId)) return null;
       const decision = makeAIDecision(state, {
         type: 'DRAFT_PICK',
         availableRacers: state.availableRacers,
-      }, ai.aiDifficulty || 'easy');
+      }, getDifficulty(currentPlayerId));
       return { playerId: currentPlayerId, action: { type: 'MAKE_DECISION', decision } };
     }
 
     case 'RACE_SETUP': {
-      // Simultaneous selection: AI players that haven't chosen yet
+      // Simultaneous selection: AI-controlled players that haven't chosen yet
+      // Check actual AI players
       for (const ai of room.aiPlayers) {
         if (hasPlayerChosen(state, ai.id)) continue;
         const player = state.players.find(p => p.id === ai.id);
@@ -191,14 +256,27 @@ function getNextAIAction(
         }, ai.aiDifficulty || 'easy');
         return { playerId: ai.id, action: { type: 'MAKE_DECISION', decision } };
       }
+      // Check disconnected human players
+      for (const [playerId, info] of room.players) {
+        if (info.connected) continue;
+        if (hasPlayerChosen(state, playerId)) continue;
+        const player = state.players.find(p => p.id === playerId);
+        if (!player) continue;
+        const available = player.hand.filter(r => !player.usedRacers.includes(r));
+        if (available.length === 0) continue;
+        const decision = makeAIDecision(state, {
+          type: 'CHOOSE_RACE_RACER',
+          availableRacers: available,
+        }, 'easy');
+        return { playerId, action: { type: 'MAKE_DECISION', decision } };
+      }
       return null;
     }
 
     case 'RACING': {
       const currentPlayerId = state.turnOrder[state.currentTurnIndex];
-      if (!aiPlayerIds.has(currentPlayerId)) return null;
-      const ai = room.aiPlayers.find(p => p.id === currentPlayerId)!;
-      const decision = makeAIDecision(state, { type: 'ROLL_DICE' }, ai.aiDifficulty || 'easy');
+      if (!isAIControlled(currentPlayerId)) return null;
+      const decision = makeAIDecision(state, { type: 'ROLL_DICE' }, getDifficulty(currentPlayerId));
       return { playerId: currentPlayerId, action: { type: 'MAKE_DECISION', decision } };
     }
 
