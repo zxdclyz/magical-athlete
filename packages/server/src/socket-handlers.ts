@@ -133,14 +133,15 @@ export function setupSocketHandlers(io: Server): void {
     // -----------------------------------------------------------------------
     // Reconnection attempt
     // -----------------------------------------------------------------------
-    if (auth?.playerId && auth?.roomId) {
-      const room = rooms.get(auth.roomId);
-      if (room && room.players.has(auth.playerId)) {
+    if (auth?.playerId) {
+      const roomId = auth.roomId ?? playerRoomMap.get(auth.playerId);
+      const room = roomId ? rooms.get(roomId) : undefined;
+      if (room && roomId && room.players.has(auth.playerId)) {
         const ok = reconnectPlayer(room, auth.playerId, socket.id);
         if (ok) {
           cancelCleanupTimer(room);
-          socket.join(auth.roomId);
-          io.to(auth.roomId).emit('room_updated', getRoomInfo(room));
+          socket.join(roomId);
+          io.to(roomId).emit('room_updated', getRoomInfo(room));
 
           // If game is in progress, send current state
           if (room.gameState) {
@@ -150,7 +151,7 @@ export function setupSocketHandlers(io: Server): void {
           }
 
           // Bind all room events for this socket
-          bindRoomEvents(io, socket, auth.playerId, auth.roomId);
+          bindRoomEvents(io, socket, auth.playerId, roomId);
           return;
         }
       }
