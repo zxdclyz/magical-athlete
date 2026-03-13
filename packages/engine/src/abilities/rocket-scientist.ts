@@ -15,7 +15,7 @@ export const rocketScientistHandler: AbilityHandler = {
     return {
       type: 'USE_ABILITY',
       racerName: 'rocket_scientist',
-      abilityDescription: `Move ${event.value * 2} instead of ${event.value}? (You will trip)`,
+      abilityDescription: `移动${event.value * 2}格而不是${event.value}格？（你会被绊倒）`,
     };
   },
   execute(event, state, decision) {
@@ -29,7 +29,7 @@ export const rocketScientistHandler: AbilityHandler = {
       return {
         state: { ...state, activeRacers },
         events: [
-          { type: 'ABILITY_TRIGGERED', racerName: 'rocket_scientist', abilityName: 'Rocket Scientist', description: `Doubled to ${doubled}, will trip` },
+          { type: 'ABILITY_TRIGGERED', racerName: 'rocket_scientist', abilityName: '火箭科学家', description: `加倍到${doubled}格，将被绊倒` },
           { type: 'DICE_MODIFIED', playerId: event.playerId, originalValue: event.value, newValue: doubled, reason: 'Rocket Scientist' },
           { type: 'RACER_TRIPPED', racerName: 'rocket_scientist' },
         ],

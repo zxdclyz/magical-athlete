@@ -90,4 +90,28 @@ describe('Race Setup Phase (simultaneous selection)', () => {
     expect(hasPlayerChosen(state, 'p1')).toBe(true);
     expect(hasPlayerChosen(state, 'p2')).toBe(false);
   });
+
+  it('should set turn order based on last race positions (farthest behind first)', () => {
+    let state = makeRaceSetupState();
+    // Simulate last race: p2 was farther behind than p1
+    state.lastRacePositions = { p1: 15, p2: 5 };
+
+    state = processRacerChoice(state, 'p1', 'alchemist').state!;
+    state = processRacerChoice(state, 'p2', 'blimp').state!;
+
+    // p2 should go first (was farther behind)
+    expect(state.turnOrder[0]).toBe('p2');
+    expect(state.turnOrder[1]).toBe('p1');
+  });
+
+  it('should randomize turn order for first race (no lastRacePositions)', () => {
+    // Run multiple times — should contain both players in some order
+    let state = makeRaceSetupState();
+    state = processRacerChoice(state, 'p1', 'alchemist').state!;
+    state = processRacerChoice(state, 'p2', 'blimp').state!;
+
+    expect(state.turnOrder).toHaveLength(2);
+    expect(state.turnOrder).toContain('p1');
+    expect(state.turnOrder).toContain('p2');
+  });
 });

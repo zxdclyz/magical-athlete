@@ -6,7 +6,7 @@ import { legsHandler } from '../../src/abilities/legs.js';
 import { hypnotistHandler } from '../../src/abilities/hypnotist.js';
 import { cheerleaderHandler } from '../../src/abilities/cheerleader.js';
 import { thirdWheelHandler } from '../../src/abilities/third-wheel.js';
-import { partyAnimalHandler } from '../../src/abilities/party-animal.js';
+import { partyAnimalMoveHandler } from '../../src/abilities/party-animal.js';
 import type { GameState, Player, ActiveRacer } from '../../src/types.js';
 
 function makeState(racers: Partial<ActiveRacer>[]): GameState {
@@ -70,7 +70,7 @@ describe('Legs', () => {
     expect(result.pendingDecision!.request.type).toBe('USE_ABILITY');
   });
 
-  it('should emit DICE_MODIFIED to 5 when accepted', () => {
+  it('should move racer 5 spaces and set skipMainMove when accepted', () => {
     const engine = new EventEngine();
     engine.registerHandler(legsHandler);
     const state = makeState([{ racerName: 'legs', position: 0 }]);
@@ -81,8 +81,9 @@ describe('Legs', () => {
       { type: 'TURN_START', playerId: 'p1' },
     );
     expect(result.events).toContainEqual(
-      expect.objectContaining({ type: 'DICE_MODIFIED', newValue: 5 }),
+      expect.objectContaining({ type: 'RACER_MOVING', racerName: 'legs', from: 0, to: 5 }),
     );
+    expect(result.state.skipMainMove).toBe(true);
   });
 });
 
@@ -188,7 +189,7 @@ describe('Third Wheel', () => {
 describe('Party Animal', () => {
   it('should move all racers 1 towards party animal', () => {
     const engine = new EventEngine();
-    engine.registerHandler(partyAnimalHandler);
+    engine.registerHandler(partyAnimalMoveHandler);
     const state = makeState([
       { racerName: 'party_animal', position: 5 },
       { racerName: 'alchemist', position: 3 },
@@ -201,7 +202,7 @@ describe('Party Animal', () => {
 
   it('should not move racers already on same space', () => {
     const engine = new EventEngine();
-    engine.registerHandler(partyAnimalHandler);
+    engine.registerHandler(partyAnimalMoveHandler);
     const state = makeState([
       { racerName: 'party_animal', position: 5 },
       { racerName: 'alchemist', position: 5 },

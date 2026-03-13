@@ -30,7 +30,7 @@ export const babaYagaHandler: AbilityHandler = {
       const activeRacers = state.activeRacers.map(r => {
         if (r.racerName !== 'baba_yaga' && r.position === event.space && !r.finished && !r.eliminated) {
           events.push(
-            { type: 'ABILITY_TRIGGERED', racerName: 'baba_yaga', abilityName: 'Baba Yaga', description: `Tripped ${r.racerName}` },
+            { type: 'ABILITY_TRIGGERED', racerName: 'baba_yaga', abilityName: '芭芭雅嘎', description: `绊倒了${r.racerName}` },
             { type: 'RACER_TRIPPED', racerName: r.racerName },
           );
           return { ...r, tripped: true };
@@ -49,7 +49,7 @@ export const babaYagaHandler: AbilityHandler = {
       return {
         state: { ...state, activeRacers },
         events: [
-          { type: 'ABILITY_TRIGGERED', racerName: 'baba_yaga', abilityName: 'Baba Yaga', description: `Tripped ${event.racerName}` },
+          { type: 'ABILITY_TRIGGERED', racerName: 'baba_yaga', abilityName: '芭芭雅嘎', description: `绊倒了${event.racerName}` },
           { type: 'RACER_TRIPPED', racerName: event.racerName },
         ],
       };

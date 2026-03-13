@@ -7,9 +7,13 @@
   },
   "dependencies": {
     "@magical-athlete/engine": "workspace:*",
+    "cookie": "^1.1.1",
+    "express": "^5.2.1",
     "socket.io": "^4.7.0"
   },
   "devDependencies": {
+    "@types/cookie": "^1.0.0",
+    "@types/express": "^5.0.6",
     "socket.io-client": "^4.7.0",
     "tsx": "^4.0.0",
     "typescript": "^5.4.0"

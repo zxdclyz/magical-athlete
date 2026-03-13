@@ -31,7 +31,7 @@ export const sisyphusHandler: AbilityHandler = {
     }
 
     const events: import('../types.js').GameEvent[] = [
-      { type: 'ABILITY_TRIGGERED', racerName: 'sisyphus', abilityName: 'Sisyphus', description: 'Rolled 6 — warped to Start, lost a chip' },
+      { type: 'ABILITY_TRIGGERED', racerName: 'sisyphus', abilityName: '西西弗斯', description: '掷出6——传送回起点，失去1枚筹码' },
       { type: 'RACER_WARPED', racerName: 'sisyphus', from: fromPos, to: 0 },
     ];
     if (lostChip > 0) {

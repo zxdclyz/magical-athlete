@@ -18,7 +18,7 @@ export const coachHandler: AbilityHandler = {
     return {
       state,
       events: [
-        { type: 'ABILITY_TRIGGERED', racerName: 'coach', abilityName: 'Coach', description: '+1 from Coach on same space' },
+        { type: 'ABILITY_TRIGGERED', racerName: 'coach', abilityName: '教练', description: '教练同格加成 +1' },
         { type: 'DICE_MODIFIED', playerId: event.playerId, originalValue: event.value, newValue: event.value + 1, reason: 'Coach' },
       ],
     };

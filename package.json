@@ -4,7 +4,11 @@
   "scripts": {
     "dev:server": "pnpm --filter @magical-athlete/server dev",
     "dev:client": "pnpm --filter @magical-athlete/client dev",
+    "build": "pnpm --filter @magical-athlete/client build && pnpm --filter @magical-athlete/server exec tsc",
+    "start": "node packages/server/dist/index.js",
     "test": "pnpm --filter @magical-athlete/engine test",
-    "test:watch": "pnpm --filter @magical-athlete/engine test:watch"
+    "test:watch": "pnpm --filter @magical-athlete/engine test:watch",
+    "docker:build": "docker build -t magical-athlete .",
+    "docker:run": "docker run --rm -p 3000:3000 -v $(pwd)/config.json:/app/config.json magical-athlete"
   }
 }

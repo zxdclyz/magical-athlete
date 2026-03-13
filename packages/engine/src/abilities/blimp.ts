@@ -19,7 +19,7 @@ export const blimpHandler: AbilityHandler = {
     return {
       state,
       events: [
-        { type: 'ABILITY_TRIGGERED', racerName: 'blimp', abilityName: 'Blimp', description: modifier > 0 ? `+${modifier} before second corner` : `${modifier} after second corner` },
+        { type: 'ABILITY_TRIGGERED', racerName: 'blimp', abilityName: '飞艇', description: modifier > 0 ? `第二弯道前 +${modifier}` : `第二弯道后 ${modifier}` },
         { type: 'DICE_MODIFIED', playerId: event.playerId, originalValue: event.value, newValue, reason: 'Blimp' },
       ],
     };

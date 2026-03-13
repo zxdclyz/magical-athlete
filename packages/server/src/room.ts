@@ -21,6 +21,12 @@ export interface RoomState {
 
 let nextAIId = 1;
 
+const AI_NAMES = [
+  '小明', '阿花', '大壮', '豆豆', '小白',
+  '阿宝', '铁柱', '翠花', '狗蛋', '小芳',
+  '阿强', '旺财', '秀兰', '大毛', '小胖',
+];
+
 export function createRoom(roomId: string, hostSocketId: string, hostName: string): RoomState {
   return {
     id: roomId,
@@ -42,9 +48,14 @@ export function removePlayer(room: RoomState, socketId: string): void {
 
 export function addAI(room: RoomState, difficulty: 'easy' | 'normal'): Player {
   const aiId = `ai_${nextAIId++}`;
+  const usedNames = new Set(room.aiPlayers.map(p => p.name));
+  const available = AI_NAMES.filter(n => !usedNames.has(n));
+  const name = available.length > 0
+    ? available[Math.floor(Math.random() * available.length)]
+    : `玩家${nextAIId}`;
   const ai: Player = {
     id: aiId,
-    name: `AI ${difficulty === 'easy' ? '(Easy)' : '(Normal)'}`,
+    name,
     isAI: true,
     aiDifficulty: difficulty,
     hand: [],
@@ -75,8 +86,14 @@ export function startGame(room: RoomState): { state: GameState; events: GameEven
   // Add AI players
   allPlayers.push(...room.aiPlayers);
 
-  if (allPlayers.length < 2 || allPlayers.length > 5) {
-    return { error: 'Need 2-5 players' };
+  // Auto-fill with AI to reach minimum 3 players
+  while (allPlayers.length < 3) {
+    const ai = addAI(room, 'easy');
+    allPlayers.push(ai);
+  }
+
+  if (allPlayers.length > 5) {
+    return { error: 'Too many players (max 5)' };
   }
 
   const initialState = createInitialState(allPlayers);
@@ -198,7 +215,10 @@ export function getPlayerView(state: GameState, playerId: string): any {
     ...state,
     players: state.players.map(p => ({
       ...p,
-      hand: p.id === playerId ? p.hand : p.hand.map(() => 'hidden' as any),
+      // During draft, everyone can see all hands (public info in the board game)
+      hand: state.phase === 'DRAFTING' || p.id === playerId
+        ? p.hand
+        : p.hand.map(() => 'hidden' as any),
     })),
     // Hide other players' race setup choices (only show that they've chosen)
     raceSetupChoices: Object.fromEntries(

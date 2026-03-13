@@ -44,8 +44,10 @@ describe('Draft Phase', () => {
     const state = createInitialState(makePlayers(3));
     const { state: draftState } = startDraft(state);
     const firstAvailable = draftState.availableRacers[0];
-    // First pick is p1, try p2
-    const result = processDraftPick(draftState, 'p2', firstAvailable);
+    const currentDrafter = draftState.draftOrder[0];
+    // Find a player who is NOT the current drafter
+    const wrongPlayer = state.players.find(p => p.id !== currentDrafter)!;
+    const result = processDraftPick(draftState, wrongPlayer.id, firstAvailable);
     expect(result.error).toBeDefined();
   });
 
@@ -85,5 +87,25 @@ describe('Draft Phase', () => {
     expect(state.players[0].hand).toHaveLength(4);
     expect(state.players[1].hand).toHaveLength(4);
     expect(state.players[2].hand).toHaveLength(4);
+  });
+
+  it('startDraft should emit DRAFT_ORDER_ROLLED event for roll-off', () => {
+    const state = createInitialState(makePlayers(3));
+    const result = startDraft(state);
+
+    const orderEvents = result.events.filter(e => e.type === 'DRAFT_ORDER_ROLLED');
+    expect(orderEvents).toHaveLength(1);
+    expect(orderEvents[0].type === 'DRAFT_ORDER_ROLLED' && orderEvents[0].rolls).toHaveLength(3);
+  });
+
+  it('startDraft should randomize player order via roll-off', () => {
+    const state = createInitialState(makePlayers(3));
+    const orders = new Set<string>();
+    for (let i = 0; i < 20; i++) {
+      const result = startDraft(state);
+      orders.add(result.state.draftOrder.slice(0, 3).join(','));
+    }
+    // With random rolls, we should see at least 2 different orderings in 20 tries
+    expect(orders.size).toBeGreaterThan(1);
   });
 });

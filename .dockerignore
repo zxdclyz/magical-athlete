@@ -1,0 +1,17 @@
+node_modules
+.git
+.gitignore
+*.md
+docs
+pdfs
+rules
+tracks
+racers/*.png
+racers/individual
+.claude
+.claude-internal
+.agents
+.factory
+.codebuddy
+.superpowers
+dist

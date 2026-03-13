@@ -15,7 +15,7 @@ export const hareMovementHandler: AbilityHandler = {
     return {
       state,
       events: [
-        { type: 'ABILITY_TRIGGERED', racerName: 'hare', abilityName: 'Hare', description: '+2 to move' },
+        { type: 'ABILITY_TRIGGERED', racerName: 'hare', abilityName: '兔子', description: '移动 +2' },
         { type: 'DICE_MODIFIED', playerId: event.playerId, originalValue: event.value, newValue: event.value + 2, reason: 'Hare' },
       ],
     };
@@ -42,9 +42,9 @@ export const hareLeadHandler: AbilityHandler = {
     const scores = { ...state.scores };
     scores[hare.playerId] = (scores[hare.playerId] || 0) + 1;
     return {
-      state: { ...state, scores },
+      state: { ...state, scores, skipMainMove: true },
       events: [
-        { type: 'ABILITY_TRIGGERED', racerName: 'hare', abilityName: 'Hare', description: 'Alone in lead — skips move, gains bronze chip' },
+        { type: 'ABILITY_TRIGGERED', racerName: 'hare', abilityName: '兔子', description: '独自领先——跳过移动，获得铜色筹码' },
         { type: 'POINT_CHIP_GAINED', playerId: hare.playerId, chipType: 'bronze', value: 1 },
       ],
     };

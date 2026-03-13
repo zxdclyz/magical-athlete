@@ -67,19 +67,34 @@ export function processRacerChoice(
     };
   });
 
+  // Determine turn order based on last race results
+  let turnOrder: string[];
+  if (Object.keys(state.lastRacePositions).length > 0) {
+    // Sort players: farthest behind (lowest position) goes first
+    turnOrder = [...state.players]
+      .sort((a, b) => (state.lastRacePositions[a.id] ?? 0) - (state.lastRacePositions[b.id] ?? 0))
+      .map(p => p.id);
+  } else {
+    // First race: randomize order
+    turnOrder = [...state.players].sort(() => Math.random() - 0.5).map(p => p.id);
+  }
+
   const newState: GameState = {
     ...state,
     players,
     activeRacers,
     phase: 'RACING',
-    turnOrder: players.map(p => p.id),
+    turnOrder,
     currentTurnIndex: 0,
     raceSetupChoices: {},
   };
 
   return {
     state: newState,
-    events: [{ type: 'PHASE_CHANGED', phase: 'RACING' }],
+    events: [
+      { type: 'TURN_ORDER_DECIDED', turnOrder },
+      { type: 'PHASE_CHANGED', phase: 'RACING' },
+    ],
   };
 }
 

@@ -27,7 +27,7 @@ export const hugeBabyHandler: AbilityHandler = {
     return {
       state: { ...state, activeRacers },
       events: [
-        { type: 'ABILITY_TRIGGERED', racerName: 'huge_baby', abilityName: 'Huge Baby', description: `${event.racerName} can't share space — moved behind` },
+        { type: 'ABILITY_TRIGGERED', racerName: 'huge_baby', abilityName: '巨婴', description: `${event.racerName}不能同格——被移到身后` },
         { type: 'RACER_WARPED', racerName: event.racerName, from: event.space, to: behindPos },
       ],
     };

@@ -6,9 +6,27 @@ import { generateFullDraftOrder, getFlipCount, flipDraftCards } from '../state.j
  * Start draft: flip first round of cards, set up snake draft order.
  */
 export function startDraft(state: GameState): { state: GameState; events: GameEvent[] } {
-  const playerIds = state.players.map(p => p.id);
-  const playerCount = playerIds.length;
-  const draftOrder = generateFullDraftOrder(playerIds, playerCount);
+  const events: GameEvent[] = [];
+
+  // Roll off to determine draft order (rulebook page 12)
+  const rolls = state.players.map(p => ({
+    playerId: p.id,
+    roll: Math.floor(Math.random() * 6) + 1,
+  }));
+  // Sort by roll descending (highest goes first), break ties randomly
+  rolls.sort((a, b) => b.roll - a.roll || (Math.random() - 0.5));
+
+  const sortedPlayerIds = rolls.map(r => r.playerId);
+
+  // Emit a single draft-order event (not DICE_ROLLED, to avoid triggering race dice animations)
+  events.push({
+    type: 'DRAFT_ORDER_ROLLED',
+    rolls: rolls.map(r => ({ playerId: r.playerId, value: r.roll })),
+    order: sortedPlayerIds,
+  });
+
+  const playerCount = sortedPlayerIds.length;
+  const draftOrder = generateFullDraftOrder(sortedPlayerIds, playerCount);
 
   // Flip first round of cards
   const flipCount = getFlipCount(playerCount);
@@ -22,9 +40,11 @@ export function startDraft(state: GameState): { state: GameState; events: GameEv
     availableRacers: flipped,
   };
 
+  events.push({ type: 'PHASE_CHANGED', phase: 'DRAFTING' });
+
   return {
     state: newState,
-    events: [{ type: 'PHASE_CHANGED', phase: 'DRAFTING' }],
+    events,
   };
 }
 

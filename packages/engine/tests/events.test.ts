@@ -264,4 +264,26 @@ describe('EventEngine', () => {
     engine.processEvent({ type: 'DICE_ROLLED', playerId: 'p1', value: 2 }, state);
     expect(triggered).toBe(false);
   });
+
+  it('should skip handlers for finished racers (powers deactivate after winning)', () => {
+    const engine = new EventEngine();
+    let triggered = false;
+
+    engine.registerHandler({
+      racerName: 'alchemist',
+      eventTypes: ['DICE_ROLLED'],
+      priority: 10,
+      shouldTrigger: () => true,
+      execute: (_event, state) => {
+        triggered = true;
+        return { state, events: [] };
+      },
+    });
+
+    const state = makeRacingState();
+    state.activeRacers[0].finished = true;
+    state.activeRacers[0].finishOrder = 1;
+    engine.processEvent({ type: 'DICE_ROLLED', playerId: 'p1', value: 2 }, state);
+    expect(triggered).toBe(false);
+  });
 });

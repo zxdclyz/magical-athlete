@@ -4,6 +4,7 @@ export interface AbilityHandler {
   racerName: RacerName;
   eventTypes: GameEvent['type'][];
   priority: number; // lower = triggers first
+  isProxy?: boolean; // true for copied ability proxy handlers
   shouldTrigger(event: GameEvent, state: GameState): boolean;
   getDecisionRequest?(event: GameEvent, state: GameState): DecisionRequest | null;
   execute(event: GameEvent, state: GameState, decision?: DecisionResponse): {
@@ -38,6 +39,10 @@ export class EventEngine {
     this.handlers = [];
   }
 
+  removeProxyHandlersFor(racerName: RacerName): void {
+    this.handlers = this.handlers.filter(h => !(h.racerName === racerName && h.isProxy));
+  }
+
   /**
    * Process an event through all registered handlers.
    * Handles chain triggering with infinite loop prevention.
@@ -59,7 +64,7 @@ export class EventEngine {
       for (const handler of this.handlers) {
         // Only trigger for racers in the active race
         const activeRacer = currentState.activeRacers.find(
-          r => r.racerName === handler.racerName && !r.eliminated
+          r => r.racerName === handler.racerName && !r.eliminated && !r.finished
         );
         if (!activeRacer) continue;
 

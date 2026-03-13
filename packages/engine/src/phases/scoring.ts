@@ -54,16 +54,14 @@ export function assignRaceChips(state: GameState): { state: GameState; events: G
 }
 
 /**
- * Get the final winner (player with highest total score).
+ * Get the final winner(s) — supports ties per rulebook page 19.
  */
-export function getFinalWinner(state: GameState): string {
+export function getFinalWinners(state: GameState): string[] {
   let maxScore = -1;
-  let winnerId = '';
-  for (const [playerId, score] of Object.entries(state.scores)) {
-    if (score > maxScore) {
-      maxScore = score;
-      winnerId = playerId;
-    }
+  for (const score of Object.values(state.scores)) {
+    if (score > maxScore) maxScore = score;
   }
-  return winnerId;
+  return Object.entries(state.scores)
+    .filter(([, score]) => score === maxScore)
+    .map(([playerId]) => playerId);
 }

@@ -23,18 +23,24 @@ export const hecklerHandler: AbilityHandler = {
     const heckler = state.activeRacers.find(r => r.racerName === 'heckler')!;
     const finishIndex = state.track.length - 1;
     const newPos = Math.min(finishIndex, heckler.position + 2);
-    const activeRacers = state.activeRacers.map(r => {
-      if (r.racerName === 'heckler') {
-        return { ...r, position: newPos };
-      }
-      return r;
-    });
-    return {
-      state: { ...state, activeRacers },
-      events: [
-        { type: 'ABILITY_TRIGGERED', racerName: 'heckler', abilityName: 'Heckler', description: 'Racer barely moved — Heckler moves 2' },
-        { type: 'RACER_MOVING', racerName: 'heckler', from: heckler.position, to: newPos, isMainMove: false },
-      ],
-    };
+    const events: import('../types.js').GameEvent[] = [
+      { type: 'ABILITY_TRIGGERED', racerName: 'heckler', abilityName: '起哄者', description: '角色几乎没动——起哄者前进2格' },
+      { type: 'RACER_MOVING', racerName: 'heckler', from: heckler.position, to: newPos, isMainMove: false },
+    ];
+    let activeRacers: import('../types.js').ActiveRacer[];
+    if (newPos >= finishIndex && !heckler.finished) {
+      const finishCount = state.activeRacers.filter(r => r.finished).length + 1;
+      activeRacers = state.activeRacers.map(r => {
+        if (r.racerName === 'heckler') return { ...r, position: newPos, finished: true, finishOrder: finishCount };
+        return r;
+      });
+      events.push({ type: 'RACER_FINISHED', racerName: 'heckler', place: finishCount });
+    } else {
+      activeRacers = state.activeRacers.map(r => {
+        if (r.racerName === 'heckler') return { ...r, position: newPos };
+        return r;
+      });
+    }
+    return { state: { ...state, activeRacers }, events };
   },
 };

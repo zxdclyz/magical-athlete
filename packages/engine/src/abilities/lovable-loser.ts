@@ -23,7 +23,7 @@ export const lovableLoserHandler: AbilityHandler = {
     return {
       state: { ...state, scores },
       events: [
-        { type: 'ABILITY_TRIGGERED', racerName: 'lovable_loser', abilityName: 'Lovable Loser', description: 'Alone in last place — gains bronze chip' },
+        { type: 'ABILITY_TRIGGERED', racerName: 'lovable_loser', abilityName: '可爱的失败者', description: '独自垫底——获得铜色筹码' },
         { type: 'POINT_CHIP_GAINED', playerId: racer.playerId, chipType: 'bronze', value: 1 },
       ],
     };

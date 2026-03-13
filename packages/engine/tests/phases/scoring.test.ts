@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { assignRaceChips, getRaceResults, getFinalWinner } from '../../src/phases/scoring.js';
+import { assignRaceChips, getRaceResults, getFinalWinners } from '../../src/phases/scoring.js';
 import { createInitialState } from '../../src/state.js';
 import type { GameState, Player, ActiveRacer } from '../../src/types.js';
 
@@ -98,7 +98,7 @@ describe('Scoring', () => {
     });
   });
 
-  describe('getFinalWinner', () => {
+  describe('getFinalWinners', () => {
     it('should return player with highest score', () => {
       const state = makeRaceEndState([
         { racerName: 'alchemist' },
@@ -106,19 +106,33 @@ describe('Scoring', () => {
       ]);
       state.scores = { p1: 15, p2: 20 };
 
-      const winner = getFinalWinner(state);
-      expect(winner).toBe('p2');
+      const winners = getFinalWinners(state);
+      expect(winners).toEqual(['p2']);
     });
 
-    it('should handle tie (returns first player found with max)', () => {
+    it('should return multiple winners on tie', () => {
+      const state = makeRaceEndState([
+        { racerName: 'alchemist' },
+        { racerName: 'blimp' },
+        { racerName: 'coach' },
+      ]);
+      state.scores = { p1: 15, p2: 15, p3: 5 };
+
+      const winners = getFinalWinners(state);
+      expect(winners).toHaveLength(2);
+      expect(winners).toContain('p1');
+      expect(winners).toContain('p2');
+    });
+
+    it('should handle all tied', () => {
       const state = makeRaceEndState([
         { racerName: 'alchemist' },
         { racerName: 'blimp' },
       ]);
-      state.scores = { p1: 15, p2: 15 };
+      state.scores = { p1: 10, p2: 10 };
 
-      const winner = getFinalWinner(state);
-      expect(winner).toBeDefined();
+      const winners = getFinalWinners(state);
+      expect(winners).toHaveLength(2);
     });
   });
 });

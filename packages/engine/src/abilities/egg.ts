@@ -1,4 +1,5 @@
 import type { AbilityHandler } from '../events.js';
+import { ALL_RACER_NAMES } from '../racers.js';
 
 // Egg: At the start of my race, draw 3 new racers from the deck and pick one. I have its powers.
 // This is a pre-race ability that runs during RACE_SETUP → RACING transition.
@@ -14,10 +15,10 @@ export const eggHandler: AbilityHandler = {
   },
   getDecisionRequest(event, state) {
     if (event.type !== 'PHASE_CHANGED') return null;
-    // Draw 3 random from available (not in anyone's hand or active)
+    // Draw 3 random from all racers not in the race or anyone's hand
     const usedNames = new Set(state.activeRacers.map(r => r.racerName));
     const handNames = new Set(state.players.flatMap(p => p.hand));
-    const available = state.availableRacers.filter(r => !usedNames.has(r) && !handNames.has(r));
+    const available = ALL_RACER_NAMES.filter(r => !usedNames.has(r) && !handNames.has(r));
     const drawn = available.sort(() => Math.random() - 0.5).slice(0, 3);
     return {
       type: 'CHOOSE_COPIED_ABILITY',
@@ -35,7 +36,7 @@ export const eggHandler: AbilityHandler = {
       return {
         state: { ...state, activeRacers },
         events: [
-          { type: 'ABILITY_TRIGGERED', racerName: 'egg', abilityName: 'Egg', description: `Hatched into ${decision.racerName}` },
+          { type: 'ABILITY_TRIGGERED', racerName: 'egg', abilityName: '蛋', description: `孵化成了${decision.racerName}` },
         ],
       };
     }

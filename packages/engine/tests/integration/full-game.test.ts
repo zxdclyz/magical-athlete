@@ -105,6 +105,13 @@ describe('GameController', () => {
       turnCount++;
     }
 
+    expect(state.phase).toBe('RACE_END');
+
+    // Continue to next race
+    const cont = controller.processAction(state, 'p1', { type: 'CONTINUE_FROM_RACE_END' });
+    expect(cont.error).toBeUndefined();
+    state = cont.state;
+
     expect(state.phase).toBe('RACE_SETUP');
     expect(state.currentRace).toBe(2);
   });
@@ -128,6 +135,13 @@ describe('GameController', () => {
         if (result.error) break;
         state = result.state;
         turnCount++;
+      }
+
+      // Continue from RACE_END
+      if (state.phase === 'RACE_END') {
+        const cont = controller.processAction(state, 'p1', { type: 'CONTINUE_FROM_RACE_END' });
+        expect(cont.error).toBeUndefined();
+        state = cont.state;
       }
     }
 

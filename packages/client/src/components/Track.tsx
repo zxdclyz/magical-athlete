@@ -73,7 +73,7 @@ export function Track({ gameState, playerId }: TrackProps) {
                     margin: '2px 0',
                     opacity: r.tripped ? 0.5 : 1,
                   }}
-                    title={`${card.displayName}${r.tripped ? ' (tripped)' : ''}${r.finished ? ' (finished)' : ''}`}
+                    title={`${card.displayNameCn}${r.tripped ? '（被绊倒）' : ''}${r.finished ? '（完赛）' : ''}`}
                   >
                     <img
                       src={getRacerImageUrl(r.racerName)}
@@ -81,7 +81,7 @@ export function Track({ gameState, playerId }: TrackProps) {
                       style={{ width: '20px', height: '20px', borderRadius: '3px', objectFit: 'cover' }}
                     />
                     <span style={{ color: '#fff', fontSize: '8px', fontWeight: isMe ? 'bold' : 'normal' }}>
-                      {card.displayName.slice(0, 4)}
+                      {card.displayNameCn.slice(0, 3)}
                     </span>
                   </div>
                 );

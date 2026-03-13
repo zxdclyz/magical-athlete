@@ -39,7 +39,9 @@ export interface RacerCard {
   displayName: string;
   displayNameCn: string;
   abilityText: string;
+  abilityTextCn: string;
   tagline: string;
+  taglineCn: string;
 }
 
 // ============ 玩家 ============
@@ -63,12 +65,14 @@ export interface ActiveRacer {
   eliminated: boolean;
   copiedAbility?: RacerName;
   mastermindPrediction?: string;
+  geniusPrediction?: number;
   sisyphusChips?: number;
 }
 
 // ============ 游戏事件 ============
 export type GameEvent =
   | { type: 'PHASE_CHANGED'; phase: GamePhase }
+  | { type: 'DRAFT_ORDER_ROLLED'; rolls: Array<{ playerId: string; value: number }>; order: string[] }
   | { type: 'TURN_START'; playerId: string }
   | { type: 'TURN_END'; playerId: string }
   | { type: 'DICE_ROLLED'; playerId: string; value: number }
@@ -84,8 +88,9 @@ export type GameEvent =
   | { type: 'ABILITY_TRIGGERED'; racerName: RacerName; abilityName: string; description: string }
   | { type: 'POINT_CHIP_GAINED'; playerId: string; chipType: 'gold' | 'silver' | 'bronze'; value: number }
   | { type: 'POINT_CHIP_LOST'; playerId: string; value: number }
+  | { type: 'TURN_ORDER_DECIDED'; turnOrder: string[] }
   | { type: 'RACE_ENDED'; raceNumber: number }
-  | { type: 'GAME_ENDED'; winnerId: string; scores: Record<string, number> }
+  | { type: 'GAME_ENDED'; winnerIds: string[]; scores: Record<string, number> }
   | { type: 'DECISION_REQUIRED'; playerId: string; decision: DecisionRequest }
   | { type: 'DECISION_MADE'; playerId: string; decision: DecisionResponse };
 
@@ -150,6 +155,13 @@ export interface GameState {
   pendingDecision: {
     playerId: string;
     request: DecisionRequest;
+    // Ability resume context (set by EventEngine)
+    handlerIndex?: number;
+    triggerEvent?: GameEvent;
+    // Turn resume context (which step of the turn we paused at)
+    turnPhase?: 'TURN_START' | 'DICE_ROLLED' | 'MOVEMENT' | 'TRACK_EFFECT' | 'TURN_END';
+    turnPlayerId?: string;
+    diceValue?: number;
   } | null;
 
   // Genius 额外回合
@@ -163,6 +175,12 @@ export interface GameState {
 
   // 比赛选人（同时选、同时揭示）
   raceSetupChoices: Record<string, RacerName>;
+
+  // 上场比赛结束时各角色的位置（用于决定下场先手）
+  lastRacePositions: Record<string, number>;
+
+  // 当前回合是否因技能跳过主移动
+  skipMainMove: boolean;
 }
 
 // ============ 玩家动作 ============
@@ -171,4 +189,5 @@ export type PlayerAction =
   | { type: 'ADD_AI'; difficulty: 'easy' | 'normal' }
   | { type: 'REMOVE_AI'; playerId: string }
   | { type: 'START_GAME' }
-  | { type: 'MAKE_DECISION'; decision: DecisionResponse };
+  | { type: 'MAKE_DECISION'; decision: DecisionResponse }
+  | { type: 'CONTINUE_FROM_RACE_END' };

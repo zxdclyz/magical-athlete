@@ -4,46 +4,50 @@ function makeSpace(index: number, type: TrackSpace['type'] = 'normal', arrowDist
   return { index, type, ...(arrowDistance !== undefined ? { arrowDistance } : {}) };
 }
 
-// TODO: 格子数据是占位的，需要根据实际赛道图片校准
+// Mild track (A-Side): all normal spaces, no special effects
+// Numbers on the board (5, 10, 15, 20, 25) are just position markers
 function generateMildTrack(): TrackSpace[] {
   const spaces: TrackSpace[] = [];
   spaces.push(makeSpace(0, 'start'));
-  for (let i = 1; i <= 18; i++) {
+  for (let i = 1; i <= 27; i++) {
     spaces.push(makeSpace(i, 'normal'));
   }
-  spaces.push(makeSpace(19, 'finish'));
+  spaces.push(makeSpace(28, 'finish'));
   return spaces;
 }
 
-// TODO: 格子数据是占位的，需要根据实际赛道图片校准
+// Wild track (B-Side): has special spaces (star, trip, arrow)
+// Calibrated from physical board image
 function generateWildTrack(): TrackSpace[] {
-  return [
-    makeSpace(0, 'start'),
-    makeSpace(1, 'normal'),
-    makeSpace(2, 'normal'),
-    makeSpace(3, 'arrow', 3),
-    makeSpace(4, 'normal'),
-    makeSpace(5, 'normal'),
-    makeSpace(6, 'trip'),
-    makeSpace(7, 'normal'),
-    makeSpace(8, 'star'),
-    makeSpace(9, 'normal'),
-    makeSpace(10, 'normal'),
-    makeSpace(11, 'normal'),
-    makeSpace(12, 'normal'),
-    makeSpace(13, 'arrow', -2),
-    makeSpace(14, 'normal'),
-    makeSpace(15, 'trip'),
-    makeSpace(16, 'star'),
-    makeSpace(17, 'normal'),
-    makeSpace(18, 'normal'),
-    makeSpace(19, 'finish'),
-  ];
+  const spaces: TrackSpace[] = [];
+  for (let i = 0; i <= 28; i++) {
+    spaces.push(makeSpace(i, 'normal'));
+  }
+  spaces[0] = makeSpace(0, 'start');
+  spaces[28] = makeSpace(28, 'finish');
+
+  // Star (1 POINT) spaces
+  spaces[1] = makeSpace(1, 'star');
+  spaces[13] = makeSpace(13, 'star');
+
+  // Trip (STUN) spaces
+  spaces[6] = makeSpace(6, 'trip');
+  spaces[17] = makeSpace(17, 'trip');
+  spaces[25] = makeSpace(25, 'trip');
+
+  // Arrow (MOVE) spaces
+  spaces[8] = makeSpace(8, 'arrow', 3);    // MOVE 3
+  spaces[12] = makeSpace(12, 'arrow', 1);   // MOVE 1
+  spaces[19] = makeSpace(19, 'arrow', -2);  // MOVE -2
+  spaces[20] = makeSpace(20, 'arrow', 2);   // MOVE 2
+  spaces[27] = makeSpace(27, 'arrow', -4);  // MOVE -4
+
+  return spaces;
 }
 
 const TRACK_CONFIGS: Record<string, TrackConfig> = {
-  mild: { name: 'Track - Mild', side: 'mild', secondCornerIndex: 12, spaces: generateMildTrack() },
-  wild: { name: 'Track - Wild', side: 'wild', secondCornerIndex: 12, spaces: generateWildTrack() },
+  mild: { name: 'Track - Mild', side: 'mild', secondCornerIndex: 14, spaces: generateMildTrack() },
+  wild: { name: 'Track - Wild', side: 'wild', secondCornerIndex: 14, spaces: generateWildTrack() },
 };
 
 export function createTrack(trackId: string): TrackConfig {

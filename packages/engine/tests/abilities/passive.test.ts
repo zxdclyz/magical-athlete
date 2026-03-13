@@ -277,26 +277,36 @@ describe('Lovable Loser', () => {
 });
 
 describe('Stickler', () => {
-  it('should block overshooting finish for other racers', () => {
+  it('should block overshooting finish for other racers via DICE_MODIFIED', () => {
     const engine = new EventEngine();
     engine.registerHandler(sticklerHandler);
     const state = makeState([
       { racerName: 'stickler', position: 5 },
-      { racerName: 'alchemist', position: 17 },
+      { racerName: 'alchemist', position: 25 },
     ]);
-
-    // Alchemist at 17, finish at 19, moves 5 → would go to 22 (overshoot)
+    // Track length 29 → finishIndex 28, remaining = 28-25 = 3, dice = 5 → overshoot
     const result = engine.processEvent(
-      { type: 'RACER_MOVING', racerName: 'alchemist', from: 17, to: 19, isMainMove: true },
+      { type: 'DICE_ROLLED', playerId: 'p2', value: 5 },
       state,
     );
-    // Distance is 19-17=2, but if dice was 5 that's overshoot.
-    // Actually the event has to=19 (capped at finish), from=17, distance=2, exact=2 — NOT overshoot
-    // Let me test actual overshoot: from 16, to 19, distance=3, exact=3 — exact, no block
-    // from 16, to 19, dice was 5, but movement caps at 19... hmm
-    // The issue is executeMovement already caps at finish. Stickler needs to check BEFORE capping.
-    // For now, we need to restructure. Let's test with explicit values.
-    expect(result.events).toHaveLength(0); // No block since to === finish exactly
+    expect(result.events).toContainEqual(
+      expect.objectContaining({ type: 'DICE_MODIFIED', newValue: 0, reason: 'Stickler' }),
+    );
+  });
+
+  it('should allow exact finish', () => {
+    const engine = new EventEngine();
+    engine.registerHandler(sticklerHandler);
+    const state = makeState([
+      { racerName: 'stickler', position: 5 },
+      { racerName: 'alchemist', position: 25 },
+    ]);
+    // Remaining = 28-25 = 3, dice = 3 → exact, no block
+    const result = engine.processEvent(
+      { type: 'DICE_ROLLED', playerId: 'p2', value: 3 },
+      state,
+    );
+    expect(result.events).toHaveLength(0);
   });
 
   it('should not block stickler themselves', () => {
@@ -305,9 +315,9 @@ describe('Stickler', () => {
     const state = makeState([
       { racerName: 'stickler', position: 17 },
     ]);
-
+    // Stickler's own dice roll — should not trigger
     const result = engine.processEvent(
-      { type: 'RACER_MOVING', racerName: 'stickler', from: 17, to: 19, isMainMove: true },
+      { type: 'DICE_ROLLED', playerId: 'p1', value: 5 },
       state,
     );
     expect(result.events).toHaveLength(0);

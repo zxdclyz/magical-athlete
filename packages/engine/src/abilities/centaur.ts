@@ -24,7 +24,7 @@ export const centaurHandler: AbilityHandler = {
     return {
       state: { ...state, activeRacers },
       events: [
-        { type: 'ABILITY_TRIGGERED', racerName: 'centaur', abilityName: 'Centaur', description: `Kicked ${event.passedRacer} back 2` },
+        { type: 'ABILITY_TRIGGERED', racerName: 'centaur', abilityName: '半人马', description: `将${event.passedRacer}踢退2格` },
         { type: 'RACER_MOVING', racerName: event.passedRacer, from: target.position, to: newPos, isMainMove: false },
       ],
     };

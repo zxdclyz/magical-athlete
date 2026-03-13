@@ -24,7 +24,7 @@ export const lackeyHandler: AbilityHandler = {
     return {
       state: { ...state, activeRacers },
       events: [
-        { type: 'ABILITY_TRIGGERED', racerName: 'lackey', abilityName: 'Lackey', description: 'Another racer rolled 6 — Lackey moves 2' },
+        { type: 'ABILITY_TRIGGERED', racerName: 'lackey', abilityName: '跟班', description: '其他角色掷出6——跟班前进2格' },
         { type: 'RACER_MOVING', racerName: 'lackey', from: lackey.position, to: newPos, isMainMove: false },
       ],
     };

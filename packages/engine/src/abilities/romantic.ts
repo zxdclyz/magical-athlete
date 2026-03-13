@@ -27,7 +27,7 @@ export const romanticHandler: AbilityHandler = {
     return {
       state: { ...state, activeRacers },
       events: [
-        { type: 'ABILITY_TRIGGERED', racerName: 'romantic', abilityName: 'Romantic', description: 'Ah, love! Two racers sharing a space' },
+        { type: 'ABILITY_TRIGGERED', racerName: 'romantic', abilityName: '浪漫者', description: '爱情万岁！两个角色同格了' },
         { type: 'RACER_MOVING', racerName: 'romantic', from: romantic.position, to: newPos, isMainMove: false },
       ],
     };

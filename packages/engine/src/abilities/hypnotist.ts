@@ -20,12 +20,15 @@ export const hypnotistHandler: AbilityHandler = {
       type: 'CHOOSE_TARGET_RACER',
       racerName: 'hypnotist',
       targets,
-      reason: 'Warp a racer to your space (or decline)',
+      reason: '将一个角色传送到你的格子（或放弃）',
     };
   },
   execute(event, state, decision) {
     if (event.type !== 'TURN_START') return { state, events: [] };
     if (decision && decision.type === 'CHOOSE_TARGET_RACER') {
+      // targetRacer === 'hypnotist' means player declined
+      if (decision.targetRacer === 'hypnotist') return { state, events: [] };
+
       const hypnotist = state.activeRacers.find(r => r.racerName === 'hypnotist')!;
       const target = state.activeRacers.find(r => r.racerName === decision.targetRacer);
       if (!target) return { state, events: [] };
@@ -38,7 +41,7 @@ export const hypnotistHandler: AbilityHandler = {
       return {
         state: { ...state, activeRacers },
         events: [
-          { type: 'ABILITY_TRIGGERED', racerName: 'hypnotist', abilityName: 'Hypnotist', description: `Warped ${decision.targetRacer} to space ${hypnotist.position}` },
+          { type: 'ABILITY_TRIGGERED', racerName: 'hypnotist', abilityName: '催眠师', description: `将${decision.targetRacer}传送到第${hypnotist.position}格` },
           { type: 'RACER_WARPED', racerName: decision.targetRacer, from: fromPos, to: hypnotist.position },
         ],
       };

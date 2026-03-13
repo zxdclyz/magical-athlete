@@ -24,9 +24,9 @@ export const inchwormHandler: AbilityHandler = {
     return {
       state: { ...state, activeRacers },
       events: [
-        { type: 'ABILITY_TRIGGERED', racerName: 'inchworm', abilityName: 'Inchworm', description: `Another racer rolled 1 — Inchworm moves 1, their move is skipped` },
+        { type: 'ABILITY_TRIGGERED', racerName: 'inchworm', abilityName: '尺蠖虫', description: '其他角色掷出1——尺蠖虫前进1格，该角色跳过移动' },
         { type: 'RACER_MOVING', racerName: 'inchworm', from: inchworm.position, to: newPos, isMainMove: false },
-        // The roller's move skip is handled by the turn engine checking for this event
+        { type: 'DICE_MODIFIED', playerId: event.playerId, originalValue: 1, newValue: 0, reason: 'Inchworm' },
       ],
     };
   },

@@ -18,12 +18,16 @@ export const geniusHandler: AbilityHandler = {
   },
   execute(event, state, decision) {
     if (event.type !== 'TURN_START') return { state, events: [] };
-    // Store prediction — it will be checked after dice roll
+    // Store prediction in ActiveRacer
     if (decision && decision.type === 'PREDICT_DICE') {
+      const activeRacers = state.activeRacers.map(r => {
+        if (r.racerName === 'genius') return { ...r, geniusPrediction: decision.prediction };
+        return r;
+      });
       return {
-        state: { ...state, extraTurnPlayerId: null }, // Will be set after dice check
+        state: { ...state, activeRacers },
         events: [
-          { type: 'ABILITY_TRIGGERED', racerName: 'genius', abilityName: 'Genius', description: `Predicted: ${decision.prediction}` },
+          { type: 'ABILITY_TRIGGERED', racerName: 'genius', abilityName: '天才', description: `预测点数：${decision.prediction}` },
         ],
       };
     }
@@ -42,9 +46,18 @@ export const geniusDiceCheckHandler: AbilityHandler = {
     return !!racer && racer.playerId === event.playerId && !racer.finished;
   },
   execute(event, state) {
-    // The prediction check logic would be integrated with the turn engine
-    // For now, set extraTurnPlayerId if prediction matches
-    // The actual prediction value is stored via the decision system
+    if (event.type !== 'DICE_ROLLED') return { state, events: [] };
+    const racer = state.activeRacers.find(r => r.racerName === 'genius');
+    if (!racer || racer.geniusPrediction === undefined) return { state, events: [] };
+    if (event.value === racer.geniusPrediction) {
+      // Correct prediction — grant extra turn
+      return {
+        state: { ...state, extraTurnPlayerId: racer.playerId },
+        events: [
+          { type: 'ABILITY_TRIGGERED', racerName: 'genius', abilityName: '天才', description: '猜对了！获得额外回合' },
+        ],
+      };
+    }
     return { state, events: [] };
   },
 };

@@ -30,7 +30,7 @@ export const mouthHandler: AbilityHandler = {
     return {
       state: { ...state, activeRacers },
       events: [
-        { type: 'ABILITY_TRIGGERED', racerName: 'mouth', abilityName: 'M.O.U.T.H.', description: `Chomped ${target.racerName}` },
+        { type: 'ABILITY_TRIGGERED', racerName: 'mouth', abilityName: '大嘴巴', description: `吞掉了${target.racerName}` },
         { type: 'RACER_ELIMINATED', racerName: target.racerName, byRacer: 'mouth' },
       ],
     };

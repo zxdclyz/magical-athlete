@@ -47,8 +47,8 @@ export class GameController {
     if (state.phase !== 'LOBBY') {
       return { state, events: [], error: 'Can only start game from LOBBY' };
     }
-    if (state.players.length < 2) {
-      return { state, events: [], error: 'Need at least 2 players' };
+    if (state.players.length < 3) {
+      return { state, events: [], error: 'Need at least 3 players' };
     }
 
     const result = startDraft(state);

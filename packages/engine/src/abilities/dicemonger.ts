@@ -25,7 +25,7 @@ export const dicemongerHandler: AbilityHandler = {
       const newValue = Math.floor(Math.random() * 6) + 1;
       const dicemonger = state.activeRacers.find(r => r.racerName === 'dicemonger')!;
       const events: import('../types.js').GameEvent[] = [
-        { type: 'ABILITY_TRIGGERED', racerName: 'dicemonger', abilityName: 'Dicemonger', description: `Rerolled: ${event.value} → ${newValue}` },
+        { type: 'ABILITY_TRIGGERED', racerName: 'dicemonger', abilityName: '骰子商人', description: `重掷：${event.value} → ${newValue}` },
         { type: 'DICE_MODIFIED', playerId: event.playerId, originalValue: event.value, newValue, reason: 'Dicemonger reroll' },
       ];
 

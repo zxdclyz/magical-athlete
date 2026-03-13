@@ -16,7 +16,7 @@ export const alchemistHandler: AbilityHandler = {
     return {
       type: 'USE_ABILITY',
       racerName: 'alchemist',
-      abilityDescription: `Rolled ${event.value}. Move 4 instead?`,
+      abilityDescription: `掷出了${event.value}。改为移动4格？`,
     };
   },
   execute(event, state, decision) {
@@ -25,7 +25,7 @@ export const alchemistHandler: AbilityHandler = {
       return {
         state,
         events: [
-          { type: 'ABILITY_TRIGGERED', racerName: 'alchemist', abilityName: 'Alchemist', description: 'Changed move to 4' },
+          { type: 'ABILITY_TRIGGERED', racerName: 'alchemist', abilityName: '炼金术士', description: '将移动改为4格' },
           { type: 'DICE_MODIFIED', playerId: event.playerId, originalValue: event.value, newValue: 4, reason: 'Alchemist' },
         ],
       };

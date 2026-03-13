@@ -31,7 +31,7 @@ export const twinHandler: AbilityHandler = {
       return {
         state: { ...state, activeRacers },
         events: [
-          { type: 'ABILITY_TRIGGERED', racerName: 'twin', abilityName: 'Twin', description: `Copied ${decision.racerName}'s ability from a previous winner` },
+          { type: 'ABILITY_TRIGGERED', racerName: 'twin', abilityName: '双胞胎', description: `复制了之前获胜者${decision.racerName}的能力` },
         ],
       };
     }

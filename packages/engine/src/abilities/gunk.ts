@@ -19,7 +19,7 @@ export const gunkHandler: AbilityHandler = {
     return {
       state,
       events: [
-        { type: 'ABILITY_TRIGGERED', racerName: 'gunk', abilityName: 'Gunk', description: '-1 from Gunk' },
+        { type: 'ABILITY_TRIGGERED', racerName: 'gunk', abilityName: '黏液怪', description: '黏液怪减速 -1' },
         { type: 'DICE_MODIFIED', playerId: event.playerId, originalValue: event.value, newValue, reason: 'Gunk' },
       ],
     };

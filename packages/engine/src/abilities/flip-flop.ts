@@ -21,12 +21,15 @@ export const flipFlopHandler: AbilityHandler = {
       type: 'CHOOSE_TARGET_RACER',
       racerName: 'flip_flop',
       targets,
-      reason: 'Swap spaces with a racer (or decline to roll normally)',
+      reason: '与一个角色交换位置（或放弃，正常掷骰）',
     };
   },
   execute(event, state, decision) {
     if (event.type !== 'TURN_START') return { state, events: [] };
     if (decision && decision.type === 'CHOOSE_TARGET_RACER') {
+      // targetRacer === 'flip_flop' means player declined
+      if (decision.targetRacer === 'flip_flop') return { state, events: [] };
+
       const flipFlop = state.activeRacers.find(r => r.racerName === 'flip_flop')!;
       const target = state.activeRacers.find(r => r.racerName === decision.targetRacer)!;
       if (!target) return { state, events: [] };
@@ -39,9 +42,9 @@ export const flipFlopHandler: AbilityHandler = {
         return r;
       });
       return {
-        state: { ...state, activeRacers },
+        state: { ...state, activeRacers, skipMainMove: true },
         events: [
-          { type: 'ABILITY_TRIGGERED', racerName: 'flip_flop', abilityName: 'Flip Flop', description: `Swapped with ${decision.targetRacer}` },
+          { type: 'ABILITY_TRIGGERED', racerName: 'flip_flop', abilityName: '翻转拖鞋', description: `与${decision.targetRacer}交换了位置` },
           { type: 'RACER_SWAPPED', racer1: 'flip_flop', racer2: decision.targetRacer },
         ],
       };

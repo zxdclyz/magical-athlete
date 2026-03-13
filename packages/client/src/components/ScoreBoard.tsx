@@ -11,23 +11,12 @@ export function ScoreBoard({ gameState, playerId }: ScoreBoardProps) {
   );
 
   return (
-    <div style={{
-      background: '#16213e',
-      borderRadius: '8px',
-      padding: '12px',
-    }}>
-      <h4 style={{ margin: '0 0 8px 0' }}>Scores</h4>
+    <div className="score-board">
+      <h4>得分</h4>
       {sorted.map(p => (
-        <div key={p.id} style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          padding: '4px 0',
-          borderBottom: '1px solid #0f3460',
-          color: p.id === playerId ? '#e94560' : '#ccc',
-          fontWeight: p.id === playerId ? 'bold' : 'normal',
-        }}>
+        <div key={p.id} className={`score-row ${p.id === playerId ? 'is-me' : ''}`}>
           <span>{p.name}</span>
-          <span>{gameState.scores[p.id] ?? 0} pts</span>
+          <span>{gameState.scores[p.id] ?? 0} 分</span>
         </div>
       ))}
     </div>

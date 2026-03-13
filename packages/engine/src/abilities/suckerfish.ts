@@ -18,7 +18,7 @@ export const suckerfishHandler: AbilityHandler = {
     return {
       type: 'USE_ABILITY',
       racerName: 'suckerfish',
-      abilityDescription: `Follow ${event.racerName} to space ${event.to}?`,
+      abilityDescription: `跟随${event.racerName}到第${event.to}格？`,
     };
   },
   execute(event, state, decision) {
@@ -33,7 +33,7 @@ export const suckerfishHandler: AbilityHandler = {
       return {
         state: { ...state, activeRacers },
         events: [
-          { type: 'ABILITY_TRIGGERED', racerName: 'suckerfish', abilityName: 'Suckerfish', description: `Followed ${event.racerName} to space ${event.to}` },
+          { type: 'ABILITY_TRIGGERED', racerName: 'suckerfish', abilityName: '吸盘鱼', description: `跟随${event.racerName}到了第${event.to}格` },
           { type: 'RACER_WARPED', racerName: 'suckerfish', from: fromPos, to: event.to },
         ],
       };

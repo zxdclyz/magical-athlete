@@ -17,16 +17,24 @@ export const scoocherHandler: AbilityHandler = {
     const scoocher = state.activeRacers.find(r => r.racerName === 'scoocher')!;
     const finishIndex = state.track.length - 1;
     const newPos = Math.min(finishIndex, scoocher.position + 1);
-    const activeRacers = state.activeRacers.map(r => {
-      if (r.racerName === 'scoocher') return { ...r, position: newPos };
-      return r;
-    });
-    return {
-      state: { ...state, activeRacers },
-      events: [
-        { type: 'ABILITY_TRIGGERED', racerName: 'scoocher', abilityName: 'Scoocher', description: 'Scooch! Another ability triggered' },
-        { type: 'RACER_MOVING', racerName: 'scoocher', from: scoocher.position, to: newPos, isMainMove: false },
-      ],
-    };
+    const events: import('../types.js').GameEvent[] = [
+      { type: 'ABILITY_TRIGGERED', racerName: 'scoocher', abilityName: '蹭蹭狗', description: '蹭蹭！其他角色触发了技能' },
+      { type: 'RACER_MOVING', racerName: 'scoocher', from: scoocher.position, to: newPos, isMainMove: false },
+    ];
+    let activeRacers: import('../types.js').ActiveRacer[];
+    if (newPos >= finishIndex && !scoocher.finished) {
+      const finishCount = state.activeRacers.filter(r => r.finished).length + 1;
+      activeRacers = state.activeRacers.map(r => {
+        if (r.racerName === 'scoocher') return { ...r, position: newPos, finished: true, finishOrder: finishCount };
+        return r;
+      });
+      events.push({ type: 'RACER_FINISHED', racerName: 'scoocher', place: finishCount });
+    } else {
+      activeRacers = state.activeRacers.map(r => {
+        if (r.racerName === 'scoocher') return { ...r, position: newPos };
+        return r;
+      });
+    }
+    return { state: { ...state, activeRacers }, events };
   },
 };

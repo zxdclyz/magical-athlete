@@ -20,7 +20,7 @@ export const bananaHandler: AbilityHandler = {
     return {
       state: { ...state, activeRacers },
       events: [
-        { type: 'ABILITY_TRIGGERED', racerName: 'banana', abilityName: 'Banana', description: `${event.movingRacer} slipped on Banana` },
+        { type: 'ABILITY_TRIGGERED', racerName: 'banana', abilityName: '香蕉', description: `${event.movingRacer}踩到了香蕉滑倒` },
         { type: 'RACER_TRIPPED', racerName: event.movingRacer },
       ],
     };

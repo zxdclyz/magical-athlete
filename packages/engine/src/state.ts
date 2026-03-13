@@ -111,5 +111,11 @@ export function createInitialState(players: Player[]): GameState {
 
     // 比赛选人
     raceSetupChoices: {},
+
+    // 上场比赛位置
+    lastRacePositions: {},
+
+    // 跳过主移动
+    skipMainMove: false,
   };
 }

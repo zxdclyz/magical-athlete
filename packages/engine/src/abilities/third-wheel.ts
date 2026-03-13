@@ -31,12 +31,15 @@ export const thirdWheelHandler: AbilityHandler = {
       type: 'CHOOSE_TARGET_SPACE',
       racerName: 'third_wheel',
       spaces,
-      reason: 'Warp to a space with exactly 2 racers (or decline)',
+      reason: '传送到恰好有2个角色的格子（或放弃）',
     };
   },
   execute(event, state, decision) {
     if (event.type !== 'TURN_START') return { state, events: [] };
     if (decision && decision.type === 'CHOOSE_TARGET_SPACE') {
+      // targetSpace === -1 means player declined
+      if (decision.targetSpace === -1) return { state, events: [] };
+
       const thirdWheel = state.activeRacers.find(r => r.racerName === 'third_wheel')!;
       const fromPos = thirdWheel.position;
       const activeRacers = state.activeRacers.map(r => {
@@ -46,7 +49,7 @@ export const thirdWheelHandler: AbilityHandler = {
       return {
         state: { ...state, activeRacers },
         events: [
-          { type: 'ABILITY_TRIGGERED', racerName: 'third_wheel', abilityName: 'Third Wheel', description: `Warped to space ${decision.targetSpace}` },
+          { type: 'ABILITY_TRIGGERED', racerName: 'third_wheel', abilityName: '电灯泡', description: `传送到了第${decision.targetSpace}格` },
           { type: 'RACER_WARPED', racerName: 'third_wheel', from: fromPos, to: decision.targetSpace },
         ],
       };
