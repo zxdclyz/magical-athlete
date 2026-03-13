@@ -28,7 +28,7 @@ const clientDistCandidates = [
 for (const dir of clientDistCandidates) {
   if (existsSync(dir)) {
     app.use(express.static(dir));
-    app.get('*', (_req, res) => {
+    app.get('/{*splat}', (_req, res) => {
       res.sendFile(resolve(dir, 'index.html'));
     });
     console.log(`Serving static files from ${dir}`);
