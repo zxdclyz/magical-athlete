@@ -1233,6 +1233,14 @@ h1 { font-size: 26px; font-style: italic; text-transform: uppercase; letter-spac
   .race-end-grid {
     grid-template-columns: 1fr;
   }
+  .ability-tooltip {
+    right: auto;
+    left: 0;
+    top: auto;
+    bottom: calc(100% + 8px);
+    transform: none;
+    width: min(260px, 90vw);
+  }
 }
 
 /* ============ Reduced Motion ============ */
