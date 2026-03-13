@@ -93,7 +93,11 @@ export function Race({ gameState, playerId, events, onAction }: RaceProps) {
     }
 
     // Nothing yet (game just started, before first roll)
-    return isMyTurn ? { type: 'interactive' } : { type: 'waiting', label: `等待 ${playerNames[currentPlayerId] ?? '其他玩家'} 掷骰…` };
+    // If there's a pending decision (e.g. Genius PREDICT_DICE), don't show interactive dice
+    if (isMyTurn && !gameState.pendingDecision) {
+      return { type: 'interactive' };
+    }
+    return { type: 'waiting', label: isMyTurn ? undefined : `等待 ${playerNames[currentPlayerId] ?? '其他玩家'} 掷骰…` };
   })();
   const diceAnimId = animState.diceDisplay?.stepId ?? 0;
 
