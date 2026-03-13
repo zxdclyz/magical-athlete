@@ -1,0 +1,26 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: deploy
+          key: ${{ secrets.DEPLOY_KEY }}
+          script: |
+            cd ~/magical_athlete
+            git pull
+            docker build -t magical-athlete .
+            docker stop magical-athlete || true
+            docker rm magical-athlete || true
+            docker run -d --restart unless-stopped \
+              -p 3000:3000 \
+              -v /home/deploy/magical_athlete/config.json:/app/config.json \
+              --name magical-athlete magical-athlete
