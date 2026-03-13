@@ -63,11 +63,11 @@ export function removePlayer(room: RoomState, playerId: string): void {
 
 // --- Helper functions ---
 
-export function findPlayerBySocket(room: RoomState, socketId: string): PlayerInfo | undefined {
-  for (const info of room.players.values()) {
-    if (info.socketId === socketId) return info;
+export function findPlayerBySocket(room: RoomState, socketId: string): string | null {
+  for (const [pid, info] of room.players) {
+    if (info.socketId === socketId) return pid;
   }
-  return undefined;
+  return null;
 }
 
 export function disconnectPlayer(room: RoomState, playerId: string): void {
@@ -78,12 +78,12 @@ export function disconnectPlayer(room: RoomState, playerId: string): void {
   }
 }
 
-export function reconnectPlayer(room: RoomState, playerId: string, newSocketId: string): void {
+export function reconnectPlayer(room: RoomState, playerId: string, newSocketId: string): boolean {
   const info = room.players.get(playerId);
-  if (info) {
-    info.socketId = newSocketId;
-    info.connected = true;
-  }
+  if (!info) return false;
+  info.socketId = newSocketId;
+  info.connected = true;
+  return true;
 }
 
 export function hasConnectedHumans(room: RoomState): boolean {
