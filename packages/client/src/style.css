@@ -456,7 +456,7 @@ h1 { font-size: 26px; font-style: italic; text-transform: uppercase; letter-spac
   display: flex;
   flex-direction: column;
   gap: 4px;
-  overflow-y: auto;
+  overflow: visible;
   padding: 12px;
   background: #1a171e;
   border-left: 3px solid #35303b;
@@ -475,7 +475,7 @@ h1 { font-size: 26px; font-style: italic; text-transform: uppercase; letter-spac
   display: flex;
   flex-direction: column;
   gap: 6px;
-  overflow-y: auto;
+  overflow: visible;
 }
 .player-card {
   background: #242028;
@@ -483,11 +483,12 @@ h1 { font-size: 26px; font-style: italic; text-transform: uppercase; letter-spac
   border-radius: 10px;
   padding: 8px 10px;
   transition: border-color 0.2s, background 0.2s;
-  cursor: pointer;
+  cursor: default;
   user-select: none;
   display: flex;
   align-items: center;
   gap: 10px;
+  position: relative;
 }
 .player-card:hover {
   background: #2a2530;
@@ -579,12 +580,25 @@ h1 { font-size: 26px; font-style: italic; text-transform: uppercase; letter-spac
 .status-pos { color: #888; }
 .status-copied { color: #cc5de8; }
 
-/* Ability detail on click */
-.ability-detail-card {
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 2px solid #35303b;
-  animation: expand-in 0.2s ease-out;
+/* Ability tooltip on hover */
+.ability-tooltip {
+  display: none;
+  position: absolute;
+  right: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 220px;
+  z-index: 50;
+  background: #1a171e;
+  border: 2px solid #ffd700;
+  border-radius: 8px;
+  padding: 8px 10px;
+  pointer-events: none;
+  animation: tooltip-in 0.15s ease-out;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+.player-card:hover .ability-tooltip {
+  display: block;
 }
 .ability-tag {
   color: #ffd700;
@@ -597,9 +611,19 @@ h1 { font-size: 26px; font-style: italic; text-transform: uppercase; letter-spac
   color: #999;
   line-height: 1.4;
 }
-@keyframes expand-in {
-  0% { opacity: 0; max-height: 0; }
-  100% { opacity: 1; max-height: 120px; }
+.ability-copied-from {
+  margin-top: 4px;
+  font-size: 10px;
+  color: #cc5de8;
+  font-style: italic;
+}
+.copied-indicator {
+  color: #cc5de8;
+  font-weight: 700;
+}
+@keyframes tooltip-in {
+  0% { opacity: 0; transform: translateY(-4px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 /* ============ Dice ============ */

@@ -12,11 +12,11 @@ function getRoomIdFromUrl(): string | null {
 }
 
 /**
- * Get saved playerId for a specific room.
- * Each room has its own playerId so multiple tabs with different rooms don't conflict.
+ * Get token from URL query param: ?t=xxxx
  */
-function getSavedPlayerId(roomId: string): string | null {
-  return sessionStorage.getItem(`ma_player_${roomId}`);
+function getTokenFromUrl(): string | null {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('t');
 }
 
 export function useSocket() {
@@ -25,11 +25,11 @@ export function useSocket() {
 
   useEffect(() => {
     const urlRoomId = getRoomIdFromUrl();
-    const savedPlayerId = urlRoomId ? getSavedPlayerId(urlRoomId) : null;
+    const urlToken = getTokenFromUrl();
 
     const socket = io(SERVER_URL, {
       auth: {
-        playerId: savedPlayerId || undefined,
+        token: urlToken || undefined,
         roomId: urlRoomId || undefined,
       },
       reconnection: true,
@@ -59,17 +59,15 @@ export function useSocket() {
     };
   }, []);
 
-  /** Save playerId for a specific room */
-  const saveSession = useCallback((playerId: string, roomId: string) => {
-    sessionStorage.setItem(`ma_player_${roomId}`, playerId);
+  /** Update socket auth for reconnection (token + roomId) */
+  const saveSession = useCallback((token: string, roomId: string) => {
     if (socketRef.current) {
-      socketRef.current.auth = { playerId, roomId };
+      socketRef.current.auth = { token, roomId };
     }
   }, []);
 
-  /** Clear playerId for a specific room */
-  const clearSession = useCallback((roomId: string) => {
-    sessionStorage.removeItem(`ma_player_${roomId}`);
+  /** Clear socket auth */
+  const clearSession = useCallback(() => {
     if (socketRef.current) {
       socketRef.current.auth = {};
     }

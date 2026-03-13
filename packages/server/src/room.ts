@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID, randomBytes } from 'node:crypto';
 import {
   GameController,
   createInitialState,
@@ -13,6 +13,7 @@ import {
 
 export interface PlayerInfo {
   playerId: string;
+  token: string;       // short token for URL-based reconnection
   name: string;
   socketId: string | null;
   connected: boolean;
@@ -26,6 +27,8 @@ export interface RoomState {
   gameState: GameState | null;
   controller: GameController;
   seq: number;
+  /** Accumulated events for the current phase — sent to reconnecting players */
+  phaseEvents: GameEvent[];
   cleanupTimer: ReturnType<typeof setTimeout> | null;
 }
 
@@ -37,28 +40,43 @@ const AI_NAMES = [
   '阿强', '旺财', '秀兰', '大毛', '小胖',
 ];
 
+function generateToken(): string {
+  return randomBytes(6).toString('base64url'); // 8 chars, URL-safe
+}
+
 export function createRoom(roomId: string, hostSocketId: string, hostName: string): RoomState {
   const playerId = randomUUID();
+  const token = generateToken();
   return {
     id: roomId,
     hostId: playerId,
-    players: new Map([[playerId, { playerId, name: hostName, socketId: hostSocketId, connected: true }]]),
+    players: new Map([[playerId, { playerId, token, name: hostName, socketId: hostSocketId, connected: true }]]),
     aiPlayers: [],
     gameState: null,
     controller: new GameController(),
     seq: 0,
+    phaseEvents: [],
     cleanupTimer: null,
   };
 }
 
-export function addPlayer(room: RoomState, socketId: string, name: string): string {
+export function addPlayer(room: RoomState, socketId: string, name: string): { playerId: string; token: string } {
   const playerId = randomUUID();
-  room.players.set(playerId, { playerId, name, socketId, connected: true });
-  return playerId;
+  const token = generateToken();
+  room.players.set(playerId, { playerId, token, name, socketId, connected: true });
+  return { playerId, token };
 }
 
 export function removePlayer(room: RoomState, playerId: string): void {
   room.players.delete(playerId);
+}
+
+/** Find playerId by reconnection token */
+export function findPlayerByToken(room: RoomState, token: string): string | null {
+  for (const [pid, info] of room.players) {
+    if (info.token === token) return pid;
+  }
+  return null;
 }
 
 // --- Helper functions ---

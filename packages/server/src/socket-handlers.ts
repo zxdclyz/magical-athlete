@@ -4,6 +4,7 @@ import {
   addPlayer,
   removePlayer,
   findPlayerBySocket,
+  findPlayerByToken,
   disconnectPlayer,
   reconnectPlayer,
   hasConnectedHumans,
@@ -59,6 +60,14 @@ function getRoomInfo(room: RoomState) {
 function broadcastGameUpdate(io: Server, room: RoomState, events: any[]): void {
   if (!room.gameState) return;
   room.seq++;
+
+  // Accumulate events for reconnecting players; reset on phase change
+  const hasPhaseChange = events.some((e: any) => e.type === 'PHASE_CHANGED');
+  if (hasPhaseChange) {
+    room.phaseEvents = [...events];
+  } else {
+    room.phaseEvents.push(...events);
+  }
 
   for (const [playerId, info] of room.players) {
     if (!info.connected || !info.socketId) continue;
@@ -128,35 +137,60 @@ function transferHostIfNeeded(room: RoomState, departedPlayerId: string): boolea
 
 export function setupSocketHandlers(io: Server): void {
   io.on('connection', (socket: Socket) => {
-    const auth = socket.handshake.auth as { playerId?: string; roomId?: string } | undefined;
+    const auth = socket.handshake.auth as { token?: string; roomId?: string; playerId?: string } | undefined;
 
     // -----------------------------------------------------------------------
-    // Reconnection attempt
+    // Reconnection attempt (token-based, with playerId fallback)
     // -----------------------------------------------------------------------
-    if (auth?.playerId) {
+    const reconnectToken = auth?.token;
+    const reconnectRoomId = auth?.roomId;
+
+    if (reconnectToken && reconnectRoomId) {
+      const room = rooms.get(reconnectRoomId);
+      const foundPlayerId = room ? findPlayerByToken(room, reconnectToken) : null;
+      if (room && foundPlayerId) {
+        const ok = reconnectPlayer(room, foundPlayerId, socket.id);
+        if (ok) {
+          cancelCleanupTimer(room);
+          socket.join(reconnectRoomId);
+          socket.emit('reconnected', { playerId: foundPlayerId, roomId: reconnectRoomId, token: reconnectToken });
+          io.to(reconnectRoomId).emit('room_updated', getRoomInfo(room));
+
+          if (room.gameState) {
+            room.seq++;
+            const view = getPlayerView(room.gameState, foundPlayerId);
+            socket.emit('game_update', { state: view, events: room.phaseEvents, seq: room.seq });
+          }
+
+          bindRoomEvents(io, socket, foundPlayerId, reconnectRoomId);
+          return;
+        }
+      }
+      // Token reconnect failed
+      socket.emit('session_invalid');
+    } else if (auth?.playerId) {
+      // Legacy fallback: playerId-based reconnect (for existing sessions)
       const roomId = auth.roomId ?? playerRoomMap.get(auth.playerId);
       const room = roomId ? rooms.get(roomId) : undefined;
       if (room && roomId && room.players.has(auth.playerId)) {
+        const info = room.players.get(auth.playerId)!;
         const ok = reconnectPlayer(room, auth.playerId, socket.id);
         if (ok) {
           cancelCleanupTimer(room);
           socket.join(roomId);
-          socket.emit('reconnected', { playerId: auth.playerId, roomId });
+          socket.emit('reconnected', { playerId: auth.playerId, roomId, token: info.token });
           io.to(roomId).emit('room_updated', getRoomInfo(room));
 
-          // If game is in progress, send current state
           if (room.gameState) {
             room.seq++;
             const view = getPlayerView(room.gameState, auth.playerId);
-            socket.emit('game_update', { state: view, events: [], seq: room.seq });
+            socket.emit('game_update', { state: view, events: room.phaseEvents, seq: room.seq });
           }
 
-          // Bind all room events for this socket
           bindRoomEvents(io, socket, auth.playerId, roomId);
           return;
         }
       }
-      // Reconnect failed — tell client to clear stale session
       socket.emit('session_invalid');
     }
 
@@ -174,11 +208,12 @@ export function setupSocketHandlers(io: Server): void {
 
       // The host's playerId is the first key in the map
       const [hostPlayerId] = room.players.keys();
+      const hostInfo = room.players.get(hostPlayerId)!;
       currentPlayerId = hostPlayerId;
       playerRoomMap.set(hostPlayerId, roomId);
 
       socket.join(roomId);
-      callback({ roomId, playerId: hostPlayerId });
+      callback({ roomId, playerId: hostPlayerId, token: hostInfo.token });
       io.to(roomId).emit('room_updated', getRoomInfo(room));
     });
 
@@ -197,13 +232,13 @@ export function setupSocketHandlers(io: Server): void {
         return;
       }
 
-      const playerId = addPlayer(room, socket.id, data.playerName);
+      const { playerId, token } = addPlayer(room, socket.id, data.playerName);
       currentRoomId = data.roomId;
       currentPlayerId = playerId;
       playerRoomMap.set(playerId, data.roomId);
 
       socket.join(data.roomId);
-      callback({ roomId: data.roomId, playerId });
+      callback({ roomId: data.roomId, playerId, token });
       io.to(data.roomId).emit('room_updated', getRoomInfo(room));
     });
 
@@ -279,7 +314,7 @@ export function setupSocketHandlers(io: Server): void {
       }
 
       const view = getPlayerView(room.gameState, currentPlayerId);
-      const payload = { state: view, events: [], seq: room.seq };
+      const payload = { state: view, events: room.phaseEvents, seq: room.seq };
       if (callback) {
         callback(payload);
       } else {
@@ -392,7 +427,7 @@ function bindRoomEvents(io: Server, socket: Socket, playerId: string, roomId: st
     }
 
     const view = getPlayerView(room.gameState, playerId);
-    const payload = { state: view, events: [], seq: room.seq };
+    const payload = { state: view, events: room.phaseEvents, seq: room.seq };
     if (callback) {
       callback(payload);
     } else {

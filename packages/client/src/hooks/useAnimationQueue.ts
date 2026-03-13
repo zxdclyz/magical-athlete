@@ -343,7 +343,15 @@ export function useAnimationQueue() {
 
   const enqueue = useCallback((events: GameEvent[], startIndex: number) => {
     const steps = eventsToAnimSteps(events, startIndex);
-    if (steps.length === 0) return;
+    if (steps.length === 0) {
+      // No animation steps, but still update visibleEventCount so the component
+      // re-renders and hasPendingAnims recalculates to false.
+      setAnimState(prev => ({
+        ...prev,
+        visibleEventCount: Math.max(prev.visibleEventCount, startIndex + events.length),
+      }));
+      return;
+    }
 
     queueRef.current.push(...steps);
 

@@ -20,9 +20,10 @@ interface RaceProps {
   playerId: string;
   events: GameEvent[];
   onAction: (action: any) => void;
+  consumeSkipAnimations?: () => boolean;
 }
 
-export function Race({ gameState, playerId, events, onAction }: RaceProps) {
+export function Race({ gameState, playerId, events, onAction, consumeSkipAnimations }: RaceProps) {
   const isMyTurn = gameState.turnOrder[gameState.currentTurnIndex] === playerId;
   const currentPlayerId = gameState.turnOrder[gameState.currentTurnIndex];
   const currentPlayer = gameState.players.find(p => p.id === currentPlayerId);
@@ -101,8 +102,6 @@ export function Race({ gameState, playerId, events, onAction }: RaceProps) {
   })();
   const diceAnimId = animState.diceDisplay?.stepId ?? 0;
 
-  const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
-
   // Initialize positions — for a new race, start all at position 0 so animations
   // play from the beginning. Triggers when currentRace or activeRacers change.
   useEffect(() => {
@@ -121,8 +120,27 @@ export function Race({ gameState, playerId, events, onAction }: RaceProps) {
   }, [gameState.currentRace, gameState.activeRacers.length, gameState.phase]);
 
   // Enqueue new events — pass startIndex for event-log sync
+  // Also handles: reconnect (skip animations), phase reset (events array shrinks)
   useEffect(() => {
+    // Phase change resets events array — detect when events shrunk (new phase)
+    if (events.length < lastEventsLenRef.current) {
+      lastEventsLenRef.current = 0;
+    }
+
     if (events.length > lastEventsLenRef.current) {
+      // On reconnect, skip animations — just show all events in the log instantly
+      if (consumeSkipAnimations?.()) {
+        lastEventsLenRef.current = events.length;
+        // Set positions from current game state (no animation)
+        if (gameState.activeRacers.length > 0) {
+          const racers = gameState.activeRacers
+            .filter(r => !r.eliminated)
+            .map(r => ({ ...r }));
+          initPositions(racers, gameState.track.length, events.length);
+        }
+        return;
+      }
+
       const startIndex = lastEventsLenRef.current;
       const newEvents = events.slice(startIndex);
       lastEventsLenRef.current = events.length;
@@ -272,16 +290,17 @@ export function Race({ gameState, playerId, events, onAction }: RaceProps) {
             {gameState.players.map((p, idx) => {
               const racer = gameState.activeRacers.find(r => r.playerId === p.id);
               const card = racer ? RACER_CARDS[racer.racerName] : null;
+              // If egg/twin/copy-cat has a copied ability, show that ability's info
+              const copiedCard = racer?.copiedAbility ? RACER_CARDS[racer.copiedAbility] : null;
+              const displayCard = copiedCard ?? card;
               const isCurrentTurn = p.id === (animState.animatedTurnPlayerId ?? currentPlayerId);
               const isMe = p.id === playerId;
               const pColor = PLAYER_COLORS[idx] ?? '#888';
-              const isExpanded = expandedPlayer === p.id;
 
               return (
                 <div key={p.id}
                   className={`player-card ${isCurrentTurn ? 'active-turn' : ''} ${isMe ? 'is-me' : ''}`}
                   style={{ '--player-color': pColor } as React.CSSProperties}
-                  onClick={() => setExpandedPlayer(isExpanded ? null : p.id)}
                 >
                   {racer && (
                     <div className="player-card-avatar-wrap">
@@ -294,7 +313,12 @@ export function Race({ gameState, playerId, events, onAction }: RaceProps) {
                       <span style={{ color: pColor }}>{p.name}</span>
                       {isMe && <span className="badge-me">你</span>}
                     </div>
-                    {card && <div className="player-card-racer">{card.displayNameCn}</div>}
+                    {card && (
+                      <div className="player-card-racer">
+                        {card.displayNameCn}
+                        {copiedCard && <span className="copied-indicator"> → {copiedCard.displayNameCn}</span>}
+                      </div>
+                    )}
                   </div>
                   <div className="player-card-score">{gameState.scores[p.id] ?? 0}</div>
                   {racer && (
@@ -312,11 +336,14 @@ export function Race({ gameState, playerId, events, onAction }: RaceProps) {
                   )}
                   {isCurrentTurn && <span className="badge-turn">回合中</span>}
 
-                  {/* Ability — expand on click */}
-                  {card && isExpanded && (
-                    <div className="ability-detail-card">
-                      <div className="ability-tag">⚡ {card.taglineCn}</div>
-                      <div className="ability-detail">{card.abilityTextCn}</div>
+                  {/* Ability tooltip — shown on hover */}
+                  {displayCard && (
+                    <div className="ability-tooltip">
+                      <div className="ability-tag">⚡ {displayCard.taglineCn}</div>
+                      <div className="ability-detail">{displayCard.abilityTextCn}</div>
+                      {copiedCard && card && (
+                        <div className="ability-copied-from">原始角色：{card.displayNameCn}</div>
+                      )}
                     </div>
                   )}
                 </div>

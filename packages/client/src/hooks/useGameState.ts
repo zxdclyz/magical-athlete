@@ -17,6 +17,8 @@ export function useGameState(
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [events, setEvents] = useState<GameEvent[]>([]);
   const seqRef = useRef(0);
+  const isReconnectRef = useRef(false);
+  const [skipAnimations, setSkipAnimations] = useState(false);
 
   useEffect(() => {
     const unsub1 = on('room_updated', (info: RoomInfo) => {
@@ -35,6 +37,14 @@ export function useGameState(
 
       setGameState(update.state);
 
+      // On reconnect, replace events entirely with server's phaseEvents
+      if (isReconnectRef.current) {
+        isReconnectRef.current = false;
+        setSkipAnimations(true);
+        setEvents(update.events);
+        return;
+      }
+
       if (update.events.length > 0) {
         // Clear events on phase transitions to prevent unbounded growth
         const hasPhaseChange = update.events.some(e => e.type === 'PHASE_CHANGED');
@@ -46,10 +56,10 @@ export function useGameState(
       }
     });
 
-    // Handle reconnection: reset events on reconnect
+    // Handle reconnection: mark next game_update as a full state restore
     const unsub3 = on('reconnected', () => {
-      setEvents([]);
       seqRef.current = 0;
+      isReconnectRef.current = true;
     });
 
     return () => { unsub1(); unsub2(); unsub3(); };
@@ -57,5 +67,14 @@ export function useGameState(
 
   const clearEvents = useCallback(() => setEvents([]), []);
 
-  return { roomInfo, gameState, events, clearEvents };
+  /** True when events were loaded from reconnect — skip animations, show instantly */
+  const consumeSkipAnimations = useCallback(() => {
+    if (skipAnimations) {
+      setSkipAnimations(false);
+      return true;
+    }
+    return false;
+  }, [skipAnimations]);
+
+  return { roomInfo, gameState, events, clearEvents, consumeSkipAnimations };
 }
