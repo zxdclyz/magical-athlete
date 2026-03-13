@@ -70,12 +70,18 @@ export function findPlayerBySocket(room: RoomState, socketId: string): string | 
   return null;
 }
 
-export function disconnectPlayer(room: RoomState, playerId: string): void {
+/**
+ * Mark player as disconnected, but ONLY if the given socketId matches.
+ * This prevents a stale socket's disconnect from overriding a fresh reconnection.
+ */
+export function disconnectPlayer(room: RoomState, playerId: string, socketId: string): boolean {
   const info = room.players.get(playerId);
-  if (info) {
-    info.socketId = null;
-    info.connected = false;
-  }
+  if (!info) return false;
+  // Only disconnect if this socket is still the active one
+  if (info.socketId !== socketId) return false;
+  info.socketId = null;
+  info.connected = false;
+  return true;
 }
 
 export function reconnectPlayer(room: RoomState, playerId: string, newSocketId: string): boolean {

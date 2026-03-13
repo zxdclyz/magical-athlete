@@ -295,7 +295,9 @@ export function setupSocketHandlers(io: Server): void {
 
       if (room.gameState) {
         // ----- During game: mark disconnected, AI takes over -----
-        disconnectPlayer(room, currentPlayerId);
+        // Only if this socket is still the active one (not a stale pre-reconnect socket)
+        const didDisconnect = disconnectPlayer(room, currentPlayerId, socket.id);
+        if (!didDisconnect) return; // stale socket, player already reconnected with new socket
         io.to(currentRoomId).emit('room_updated', getRoomInfo(room));
 
         // Execute AI turns for the now-disconnected player
@@ -404,7 +406,8 @@ function bindRoomEvents(io: Server, socket: Socket, playerId: string, roomId: st
     if (!room) return;
 
     if (room.gameState) {
-      disconnectPlayer(room, playerId);
+      const didDisconnect = disconnectPlayer(room, playerId, socket.id);
+      if (!didDisconnect) return; // stale socket
       io.to(roomId).emit('room_updated', getRoomInfo(room));
 
       const aiResult = executeAITurns(room);

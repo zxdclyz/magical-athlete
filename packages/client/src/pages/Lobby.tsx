@@ -3,11 +3,12 @@ import { useState } from 'react';
 interface LobbyProps {
   onCreateRoom: (playerName: string) => void;
   onJoinRoom: (roomId: string, playerName: string) => void;
+  prefillRoomId?: string;
 }
 
-export function Lobby({ onCreateRoom, onJoinRoom }: LobbyProps) {
+export function Lobby({ onCreateRoom, onJoinRoom, prefillRoomId }: LobbyProps) {
   const [name, setName] = useState('');
-  const [joinId, setJoinId] = useState('');
+  const [joinId, setJoinId] = useState(prefillRoomId ?? '');
 
   return (
     <div className="page" style={{ paddingTop: '60px', textAlign: 'center' }}>

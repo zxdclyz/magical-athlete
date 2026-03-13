@@ -3,18 +3,34 @@ import { io, type Socket } from 'socket.io-client';
 
 const SERVER_URL = import.meta.env.DEV ? 'http://localhost:3001' : '';
 
+/**
+ * Get the roomId from the current URL path: /room/:roomId
+ */
+function getRoomIdFromUrl(): string | null {
+  const match = window.location.pathname.match(/^\/room\/([A-Za-z0-9]+)$/);
+  return match ? match[1].toUpperCase() : null;
+}
+
+/**
+ * Get saved playerId for a specific room.
+ * Each room has its own playerId so multiple tabs with different rooms don't conflict.
+ */
+function getSavedPlayerId(roomId: string): string | null {
+  return sessionStorage.getItem(`ma_player_${roomId}`);
+}
+
 export function useSocket() {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const savedPlayerId = sessionStorage.getItem('ma_playerId');
-    const savedRoomId = sessionStorage.getItem('ma_roomId');
+    const urlRoomId = getRoomIdFromUrl();
+    const savedPlayerId = urlRoomId ? getSavedPlayerId(urlRoomId) : null;
 
     const socket = io(SERVER_URL, {
       auth: {
         playerId: savedPlayerId || undefined,
-        roomId: savedRoomId || undefined,
+        roomId: urlRoomId || undefined,
       },
       reconnection: true,
       reconnectionAttempts: Infinity,
@@ -43,17 +59,17 @@ export function useSocket() {
     };
   }, []);
 
+  /** Save playerId for a specific room */
   const saveSession = useCallback((playerId: string, roomId: string) => {
-    sessionStorage.setItem('ma_playerId', playerId);
-    sessionStorage.setItem('ma_roomId', roomId);
+    sessionStorage.setItem(`ma_player_${roomId}`, playerId);
     if (socketRef.current) {
       socketRef.current.auth = { playerId, roomId };
     }
   }, []);
 
-  const clearSession = useCallback(() => {
-    sessionStorage.removeItem('ma_playerId');
-    sessionStorage.removeItem('ma_roomId');
+  /** Clear playerId for a specific room */
+  const clearSession = useCallback((roomId: string) => {
+    sessionStorage.removeItem(`ma_player_${roomId}`);
     if (socketRef.current) {
       socketRef.current.auth = {};
     }
