@@ -1,7 +1,7 @@
 interface RoomInfo {
   id: string;
   hostId: string;
-  players: { id: string; name: string; isAI: boolean }[];
+  players: { id: string; name: string; isAI: boolean; connected?: boolean }[];
   aiPlayers: { id: string; name: string; isAI: boolean; aiDifficulty?: string }[];
   gameStarted: boolean;
 }
@@ -34,7 +34,8 @@ export function Room({ roomInfo, playerId, onAddAI, onRemoveAI, onStartGame }: R
         <ul style={{ listStyle: 'none', padding: 0 }}>
           {roomInfo.players.map(p => (
             <li key={p.id} style={{ padding: '10px 12px', borderBottom: '2px solid #35303b', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ color: '#fff' }}>{p.name}</span>
+              <span style={{ color: p.connected === false ? '#666' : '#fff' }}>{p.name}</span>
+              {p.connected === false && <span style={{ background: '#666', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 800 }}>离线</span>}
               {p.id === roomInfo.hostId && <span style={{ background: '#e81e3c', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 800 }}>房主</span>}
               {p.id === playerId && <span style={{ background: '#3b82f6', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 800 }}>你</span>}
             </li>
