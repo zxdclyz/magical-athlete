@@ -18,11 +18,18 @@ export function App() {
 
   // Listen for reconnection confirmation from server
   useEffect(() => {
-    return on('reconnected', (data: { playerId: string; roomId: string }) => {
+    const unsub1 = on('reconnected', (data: { playerId: string; roomId: string }) => {
       setPlayerId(data.playerId);
       setRoomId(data.roomId);
     });
-  }, [on]);
+    // If server says our session is stale, clear it and go back to lobby
+    const unsub2 = on('session_invalid', () => {
+      clearSession();
+      setPlayerId(null);
+      setRoomId(null);
+    });
+    return () => { unsub1(); unsub2(); };
+  }, [on, clearSession]);
 
   const handleCreateRoom = (playerName: string) => {
     emit('create_room', { playerName }, (res: any) => {

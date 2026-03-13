@@ -49,19 +49,17 @@ async function main() {
   p1.emit('add_ai', { difficulty: 'normal' });
   await sleep(200);
 
-  // Listen for game state updates
+  // Listen for game state updates (unified game_update message)
   let lastState: any = null;
   let eventCount = 0;
-  p1.on('game_state', (state: any) => {
-    lastState = state;
-  });
-  p1.on('game_events', (events: any[]) => {
-    eventCount += events.length;
+  p1.on('game_update', (update: { state: any; events: any[]; seq: number }) => {
+    lastState = update.state;
+    eventCount += update.events.length;
   });
 
   let p2LastState: any = null;
-  p2.on('game_state', (state: any) => {
-    p2LastState = state;
+  p2.on('game_update', (update: { state: any; events: any[]; seq: number }) => {
+    p2LastState = update.state;
   });
 
   // Start game

@@ -141,6 +141,7 @@ export function setupSocketHandlers(io: Server): void {
         if (ok) {
           cancelCleanupTimer(room);
           socket.join(roomId);
+          socket.emit('reconnected', { playerId: auth.playerId, roomId });
           io.to(roomId).emit('room_updated', getRoomInfo(room));
 
           // If game is in progress, send current state
@@ -155,7 +156,8 @@ export function setupSocketHandlers(io: Server): void {
           return;
         }
       }
-      // Reconnect failed — fall through to normal connection
+      // Reconnect failed — tell client to clear stale session
+      socket.emit('session_invalid');
     }
 
     // -----------------------------------------------------------------------
