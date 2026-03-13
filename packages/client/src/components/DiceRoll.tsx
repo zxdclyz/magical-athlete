@@ -7,6 +7,7 @@ const DICE_DOTS: Record<number, string> = {
 
 export type DiceMode =
   | { type: 'interactive' }
+  | { type: 'waiting'; label?: string }
   | { type: 'result'; value: number; label?: string; modified?: { original: number; newValue: number; reason: string } }
   | { type: 'animate'; value: number; label?: string; modified?: { original: number; newValue: number; reason: string } };
 
@@ -38,7 +39,7 @@ export function DiceRoll({ mode, onRollComplete, animId }: DiceRollProps) {
   useEffect(() => {
     if (isInteractiveRolling.current) return; // don't interrupt player's roll animation
 
-    if (mode.type === 'interactive') {
+    if (mode.type === 'interactive' || mode.type === 'waiting') {
       clearTimer();
       setDisplay(0);
       setAnimating(false);
@@ -103,6 +104,7 @@ export function DiceRoll({ mode, onRollComplete, animId }: DiceRollProps) {
 
   const label = mode.type === 'result' ? mode.label
     : mode.type === 'animate' ? mode.label
+    : mode.type === 'waiting' ? mode.label
     : undefined;
   const modified = mode.type === 'result' ? mode.modified
     : mode.type === 'animate' ? mode.modified
@@ -134,6 +136,9 @@ export function DiceRoll({ mode, onRollComplete, animId }: DiceRollProps) {
         <button className="btn-primary dice-roll-btn" onClick={doRoll}>
           掷骰子！
         </button>
+      )}
+      {mode.type === 'waiting' && !animating && (
+        <span className="dice-rolling-text">等待对方掷骰…</span>
       )}
       {animating && (
         <span className="dice-rolling-text">掷骰中…</span>

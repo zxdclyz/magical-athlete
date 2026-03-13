@@ -93,7 +93,7 @@ export function Race({ gameState, playerId, events, onAction }: RaceProps) {
     }
 
     // Nothing yet (game just started, before first roll)
-    return { type: 'interactive' };
+    return isMyTurn ? { type: 'interactive' } : { type: 'waiting', label: `等待 ${playerNames[currentPlayerId] ?? '其他玩家'} 掷骰…` };
   })();
   const diceAnimId = animState.diceDisplay?.stepId ?? 0;
 
